@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div>
+
+        <h1>Gestion de productos</h1>
+
+        <button id="agregarProducto" class="transition duration-200 hover:bg-gray-300 rounded-xl border-2 shadow-xl  py-2 px-6 font-bold" 
+                    onclick="document.getElementById('id_mod_prod_method').value = 'POST', " data-toggle="modal" data-target="#modalProducto">Agregar Producto</button>
+
+
+        <table class="w-full border-2 mt-10 mb-6 shadow-2xl rounded-lg text-center">
+            <thead>
+                <tr class="bg-slate-300">
+                    <th class="py-2">Descripcion</th>
+                    <th>Categoria</th>
+                    <th>Tipo unidad</th>
+                    <th>Precio KG</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                <tr class="border-b-2 transition duration-200 hover:bg-slate-400 ">
+                    <td class="py-3">{{producto.descripcion}} </td>
+                    <td class="capitalize">{{producto.id_categoria.categoria}} </td>
+                    <td class="capitalize">{{producto.id_unidad.tipo_unidad}} </td>
+                    <td>{{producto.precio_venta}} </td>
+                    <td>
+                        <form id="form-producto-{{ producto.id_articulo }}" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="origen" value="ART">
+                            <input type="hidden" id="id_prod_method" name="method" value="DELETE">	<!-- el es DELETE ya que los otros dos los hacen los modales -->
+                            
+                            <!-- Delete Button -->
+                            <button type="button" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
+                            onclick="deleteProducto('{{ producto.id_articulo }}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                
+                            </button>
+                            
+                            <!-- Modify Button modificar el id_mod_prod_method para que diga UPDATE-->
+                            <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+                                    onclick="openModifyProducto('{{ producto.id_articulo }}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                                
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="flex justify-start mt-4"> <!-- Paginacion -->
+            <nav class="inline-flex rounded-md shadow">
+                {% if productos.has_previous %}
+                    <a href="?page={{ productos.previous_page_number }}" 
+                    class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Anterior
+                    </a>
+                {% endif %}
+                
+                {% for num in productos.paginator.page_range %}
+                    {% if num == productos.number %}
+                        <span class="px-3 py-2 bg-indigo-600 border border-gray-300 text-sm font-medium text-white">
+                            {{ num }}
+                        </span>
+                    {% else %}
+                        <a href="?page={{ num }}" 
+                        class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if productos.has_next %}
+                    <a href="?page={{ productos.next_page_number }}" 
+                    class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Siguiente
+                    </a>
+                {% endif %}
+            </nav>
+
+
+
+        </div>
+
+</div>
+{% block modal_producto %}
+{% include 'modalProducto.html' %}
+{% endblock %}
+
+
+
+<script>
+    const agregarProductoBtn = document.querySelector('#agregarProducto');
+    const modificarProductoBtn = document.querySelector('#modificarProducto');
+
+    agregarProductoBtn.addEventListener('click', () => {
+        console.log('Se hizo clic en el botón');
+    
+        // Abrimos modal de agregarProducto
+    
+        const modal = document.querySelector('#modalProducto');
+        modal.classList.remove('hidden');
+        modal.classList.add('block');
+    
+    });
+</script>
+
+{% endblock content %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+    <h1>Gestion de productos compuestos</h1>
+
+    <button id="agregarRes" class="transition duration-200  hover:bg-gray-300 rounded-xl border-2 shadow-xl  py-2 px-6 font-bold" 
+    onclick="document.getElementById('id_mod_comp_method'.value = 'POST'" data-toggle="modal" data-target="#modalProducto">Agregar Compuesto res / cerdo / pollo </button>
+
+    <div >
+        <table class="w-full border-2 mt-10 shadow-2xl text-center "> <!--ESTA TABLA HAY QUE ITERAR EL STOCK DE LA BASE-->
+            <thead>
+                <tr class="bg-slate-300">
+                    <th class="py-2">Producto</th>
+                    <th>Cantidad</th>
+                    <th>Peso inicial</th>
+                    <th>Peso vendido </th>
+                    <th>Acciones??</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for productoCompuesto in productosCompuestos %}
+                <tr class="transition border-b-2 duration-200 hover:bg-slate-400 ">
+                <td class="py-3 capitalize">{{ productoCompuesto.id_compuesto.descripcion}} </td>
+                <td> {{ productoCompuesto.cantidad_ingresada }} </td>
+                <td> {{ productoCompuesto.peso_inicial}} Kg </td>
+                <td>Aca iria el peso vendido</td>
+                <td>
+                    <form id="form-compuesto-{{ productoCompuesto.id_stock_compuesto }}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="origen" value="COMP">
+                        <input type="hidden" id="id_comp_method" name="method" value="DELETE">	<!-- el es DELETE ya que los otros dos los hacen los modales -->
+                        
+                        <!-- Delete Button deberia funcionar con el submit-->
+                        <button type="button" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
+                            onclick="deleteCompuesto('{{ productoCompuesto.id_stock_compuesto }}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            
+                        </button>
+                        
+                        <!-- Modify Button modificar el id_mod_comp_method para que diga UPDATE-->
+                        <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+                                onclick="openModifyCompuesto('{{ productoCompuesto.id_stock_compuesto }}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 " fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
+                            
+                        </button>
+                    </form>
+
+                </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <p>La idea es que se descuente el stock desde aca. Sumando ventas hasta alcanzar el tope de la mediares o pollo o cerdo o etc y despues pasa a la siguiente</p>
+    </div>
+</div>
+{% block modal_res %}
+    {% include 'modalCompuesto.html'%}
+{% endblock %}
+
+
+
+
+<script>
+    const agregarCompuestoBtn = document.querySelector('#agregarRes');
+
+    agregarCompuestoBtn.addEventListener('click', () => {
+        console.log('Se hizo clic en el botón');
+    
+        // Abrimos modal de agregarProducto
+    
+        const modal = document.querySelector('#modalRes');
+        modal.classList.remove('hidden');
+        modal.classList.add('block');
+    
+    });
+
+
+</script>
+
+{% endblock content %}

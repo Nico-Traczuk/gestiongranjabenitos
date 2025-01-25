@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <style>
+    #lista-productos {
+            max-height: 65vh;
+            overflow-y: scroll;
+        }
+    </style>
+    
+    <div class="flex justify-between h-100">
+        <div>
+
+            <div class="flex flex-col">
+                <div class="mb-4">
+                    <label>Ingrese o escanee su codigo aca</label>
+                    <div>
+                        <input id="inputProductos" 
+                               type="text" 
+                               placeholder="Escanee o escriba el codigo" 
+                               class="border rounded-xl p-2"
+                               value="{{ search_query }}"  
+                        />
+                        <button id="agregarProducto" 
+                                class="bg-green-500 px-6 py-2 rounded-xl">
+                            Agregar Producto
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <table class="w-full border-2 mt-5 shadow-2xl text-center ">
+                <thead>
+                    <tr class="bg-slate-300">
+                        <th class="py-2">Producto</th>
+                        <th>Código</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                        <tr class="border-b-2 hover:bg-slate-300">
+                            <td>{{ producto.descripcion }}</td>
+                            <td>{{ producto.codigo_articulo }}</td>  <!-- Changed from codigo to codigo_articulo -->
+                            <td>
+                                <button class="bg-green-400 px-4 py-1 rounded" onclick="agregarProducto({{producto.id_articulo}})">-></button>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4">
+                                No se encontraron productos
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="flex justify-center mt-4">
+                <nav class="inline-flex rounded-md shadow">
+                    {% if productos.has_previous %}
+                        <a href="?page={{ productos.previous_page_number }}" 
+                           class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Anterior
+                        </a>
+                    {% endif %}
+                    
+                    {% for num in productos.paginator.page_range %}
+                        {% if num == productos.number %}
+                            <span class="px-3 py-2 bg-indigo-600 border border-gray-300 text-sm font-medium text-white">
+                                {{ num }}
+                            </span>
+                        {% else %}
+                            <a href="?page={{ num }}" 
+                               class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                {{ num }}
+                            </a>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if productos.has_next %}
+                        <a href="?page={{ productos.next_page_number }}" 
+                           class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Siguiente
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+        
+
+        <div class="flex flex-col rounded-xl justify-between gap-5 w-1/2 bg-gray-300">
+            <div class="">
+                
+                <ul class="flex flex-col gap-2 px-4 py-2" id="lista-productos">
+                    <li id="productos"></li>
+                </ul>
+            </div>
+
+            <div>
+                <div  class="flex justify-between items-center py-2 px-5 mx-2 rounded-xl bg-white">
+                    <p class="text-xl">Total Venta: <span id="totalVenta"> $0 </span></p>
+                    <button type="button" id="cerrarVentaBtn" class="bg-green-400 px-6 py-2 rounded-xl font-bold text-white hover:bg-green-500" onclick="cerrarVenta()">Cerrar venta</button>
+                </div>
+                <div class="flex gap-5 py-2 px-5 justify-between text-xl bg-white m-2 rounded-xl">
+                    <div>
+                        <label>Efectivo</label>
+                        <input id="efectivo" type="radio" name="tipoPago" />
+                    </div>
+                    <div>
+                        <label>Transferencia</label>
+                        <input id="transferencia" type="radio" name="tipoPago" />
+                    </div>
+                    <div>
+                        <label>Mercado Pago</label>
+                        <input id="mercadoPago" type="radio" name="tipoPago" />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    /*Iteracion sobre productos para tener los datos de cada producto*/
+    const productos = [
+        {% for producto in productos %}
+            {
+                id_articulo: {{ producto.id_articulo }},
+                id_empresa: {{ producto.id_empresa.id_empresa }},
+                id_categoria: {{ producto.id_categoria.id_categoria }},
+                id_unidad: {{ producto.id_unidad.id_unidad }},
+                descripcion: "{{ producto.descripcion }}",
+                codigo_articulo: "{{ producto.codigo_articulo }}",
+                precio_venta: {{producto.precio_venta}},
+                
+            },
+        {% empty %}
+            [],
+        {% endfor %}
+    ];
+    let productosSeleccionados = [];
+    let totalVenta = 0;
+    let preciosVentas = {};
+
+    const spanTotalVenta = document.getElementById('totalVenta');
+
+/*-------------------------------------------------------------------------------*/    
+
+function agregarProducto(id_articulo) {
+    console.log('agregar producto', id_articulo)
+    
+    const producto = productos.find(p => p.id_articulo === id_articulo)
+    console.log(producto)
+    
+    const listaProductos = document.getElementById('lista-productos');
+    const productoHTML = document.createElement('li');
+    productoHTML.innerHTML = `
+    <div id="producto${id_articulo}" class="flex flex-col bg-white rounded-lg p-4 gap-3 overflow-hidden shadow-xl">
+    
+      <div class="flex justify-between items-center">
+        <span>Producto: ${producto.descripcion}</span>
+        <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick="eliminarVenta('${id_articulo}')">X</button>
+        
+      </div>
+
+      <div>
+        <span>Codigo Articulo: ${producto.codigo_articulo}</span>
+      </div>
+      <div class="flex gap-2">
+        <label>Cantidad x KG:</label>
+        <input class="px-4 rounded border-b-2 bg-transparent" id="cantidad${id_articulo}" type="number" min="0" step="0.1" />
+      </div>
+      <div class="flex gap-2">
+        <label>Precio Venta:</label>
+        <input class="px-4 rounded border-b-2 bg-transparent" id="precioVenta${id_articulo}" type="number" value="${producto.precio_venta}" />
+      </div>
+
+    </div>
+  `;
+    
+    listaProductos.appendChild(productoHTML);
+    
+    const inputPrecioVenta = document.getElementById(`precioVenta${id_articulo}`);
+    const inputCantidad = document.getElementById(`cantidad${id_articulo}`);
+    
+    let totalParcialAnterior = 0;
+
+    /* Agregamos evento al input de cantidad para actualizar el total de acuerdo a su cantidad */
+    inputCantidad.addEventListener('change', function() { 
+        const cantidad = parseFloat(inputCantidad.value);
+        const precioVenta = parseFloat(inputPrecioVenta.value);
+        let totalParcial = 0;
+        if (!isNaN(precioVenta) && !isNaN(cantidad)) {
+            totalParcial = cantidad * precioVenta;
+        }
+        totalVenta = 0;
+        for (const id in preciosVentas) {
+            const precio = preciosVentas[id];
+            const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
+            const cantidadValor = parseFloat(cantidadInput.value);
+            if (!isNaN(cantidadValor)) {
+                totalVenta += cantidadValor * precio;
+            }
+        }
+        updateTotalVentas(inputPrecioVenta.id, precioVenta);
+        spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    });
+    /* Evento input para actualizar la venta, altamente refactorizada la funcion  */
+    inputPrecioVenta.addEventListener('change', function() {
+        const precioVenta = parseFloat(inputPrecioVenta.value);
+        const idInput = inputPrecioVenta.id;
+        updateTotalVentas(idInput, precioVenta);
+    });
+    productosSeleccionados.push(producto);
+    preciosVentas[`precioVenta${id_articulo}`] = producto.precio_venta;
+}
+
+/*-------------------------------------------------------------------------------*/      
+
+
+
+/*-------------------------------------------------------------------------------*/   
+
+
+
+
+function eliminarVenta(id_articulo) {
+    // Obtener el elemento HTML del producto
+    const productoHTML = document.getElementById(`producto${id_articulo}`);
+    
+    // Obtener los inputs de precio y cantidad
+    const inputPrecioVenta = document.getElementById(`precioVenta${id_articulo}`);
+    const inputCantidad = document.getElementById(`cantidad${id_articulo}`);
+    
+    // Mostrar en consola los valores actuales (para debugging)
+    console.log('Valores antes de eliminar');
+    console.log(inputCantidad.value);
+    console.log(inputPrecioVenta.value);
+    console.log(productosSeleccionados);
+    
+    // Eliminar el producto del DOM
+    productoHTML.remove();
+    
+    // Limpiar los valores de los inputs
+    inputCantidad.value = '';
+    inputPrecioVenta.value = '';
+    
+    // Encontrar el índice del producto en el array
+    const indice = productosSeleccionados.findIndex(producto => producto.id_articulo === id_articulo);
+    
+    // Si el producto existe en el array, eliminarlo
+    if (indice === -1) {
+        productosSeleccionados.splice(indice, 1);
+    }
+    
+    // Mostrar en consola los valores actualizados (para debugging)
+    console.log(inputCantidad.value);
+    console.log(inputPrecioVenta.value);
+    console.log(productosSeleccionados);
+    
+    // Eliminar el precio de venta del objeto preciosVentas
+    delete preciosVentas[`precioVenta${id_articulo}`];
+    // Actualizar el total de venta
+    updateTotalVenta();
+
+}
+
+/*-------------------------------------------------------------------------------*/    
+    /* Esta es funcion para la venta individual */
+    function updateTotalVenta() {
+        totalVenta = 0;
+        for (const id in preciosVentas) {
+          const precio = preciosVentas[id];
+          const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
+          const cantidadValor = parseFloat(cantidadInput.value);
+          if (!isNaN(cantidadValor)) {
+            totalVenta += cantidadValor * precio;
+          }
+        }
+        spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+      }
+ 
+/*-------------------------------------------------------------------------------*/    
+ 
+    function updateTotalVentas(idInput, precioVenta) {
+        if (preciosVentas[idInput]) {
+            totalVenta -= preciosVentas[idInput];
+        }
+        if (!isNaN(precioVenta)) {
+            preciosVentas[idInput] = precioVenta;
+        } else {
+            preciosVentas[idInput] = 0;
+        }
+        totalVenta = 0;
+        for (const id in preciosVentas) {
+            const precio = preciosVentas[id];
+            const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
+            const cantidadValor = parseFloat(cantidadInput.value);
+            if (!isNaN(cantidadValor)) {
+                totalVenta += cantidadValor * precio;
+            }
+        }
+        spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+
+    }
+
+
+/*-------------------------------------------------------------------------------*/    
+ 
+
+function cerrarVenta() {
+
+    const detallesVenta = productosSeleccionados.map(producto => {
+        const cantidadInput = document.getElementById(`cantidad${producto.id_articulo}`);
+        const precioVentaInput = document.getElementById(`precioVenta${producto.id_articulo}`);
+        
+        const cantidad = parseFloat(cantidadInput.value);
+        const precioUnitario = parseFloat(precioVentaInput.value);
+        const total = cantidad * precioUnitario;
+
+        return {
+            id_articulo: producto.id_articulo, // ID del artículo
+            cantidad: cantidad, // Cantidad vendida
+            precio_unitario: precioUnitario, // Precio unitario
+            total: total, // Total por artículo
+        };
+    });
+
+    // Crear el objeto con los datos de la venta
+    const venta = {
+        id_cabecera: null, // Falta obtener este valor 
+        total_venta: totalVenta, // Total general de la venta
+        detalles: detallesVenta, // Lista de detalles de la venta
+    };
+
+    // Mostrar en consola (para debugging)
+    console.log('Datos de la venta:', venta);
+
+    // Mostrar una alerta de "Venta cerrada"
+    alert('Venta cerrada');
+
+    // Limpiamos y preparamos para una proxima venta
+    inicializarEstadoVenta();
+}
+
+/*--------------------------------------------------------------------------------*/
+
+function inicializarEstadoVenta() {
+    // Reiniciar variables globales
+    productosSeleccionados = [];
+    preciosVentas = {};
+    totalVenta = 0;
+
+    // Reiniciar el DOM
+    const listaProductos = document.getElementById('lista-productos');
+    listaProductos.innerHTML = ''; // Limpiar la lista de productos
+    spanTotalVenta.textContent = `$0`; // Restablecer el total
+
+
+}
+
+
+/*-------------------------------------------------------------------------------*/    
+      /*   BUSCADOR DE PRODUCTOS     */
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputProductos = document.getElementById('inputProductos');
+        const btnAgregar = document.getElementById('agregarProducto');
+
+
+        
+        btnAgregar.addEventListener('click', function() {
+            searchProducts();
+        });
+    
+        // Handle Enter key
+        inputProductos.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+    
+        function searchProducts() {
+            const searchValue = inputProductos.value.trim();
+            
+            // Send search request to server
+            window.location.href = `?search=${searchValue}`;
+        }
+
+
+    });
+    
+</script>
+{% endblock content %}
