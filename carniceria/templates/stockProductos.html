@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <div>
+        <form id="form-producto" action="{% url 'stockProducto' %}" method="POST">{% csrf_token %}
+            <input type="hidden" id="id_prod_method" name="_method" value="POST">
+            <!-- Botón para agregar producto -->
+            <button type="button" id="agregarProducto" class="transition duration-200 hover:bg-gray-300 rounded-xl border-2 shadow-xl py-2 px-6 font-bold"
+                 >
+                Agregar Producto
+            </button>
+        
+            <!-- Tabla de productos -->
+            <div>
+                <table class="w-full border-2 mt-10 shadow-2xl text-center">
+                    <thead>
+                        <tr class="bg-slate-300">
+                            <th class="py-2">Descripción</th>
+                            <th>Categoría</th>
+                            <th>Tipo Unidad</th>
+                            <th>Precio KG</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for producto in productos %}
+                        <tr class="transition border-b-2 duration-200 hover:bg-slate-400">
+                            <td class="py-3">{{ producto.descripcion }}</td>
+                            <td class="capitalize">{{ producto.id_categoria.categoria }}</td>
+                            <td class="capitalize">{{ producto.id_unidad.tipo_unidad }}</td>
+                            <td>{{ producto.precio_venta }}</td>
+                            <td>
+                                <!-- Botón para eliminar -->
+                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
+                                    onclick="document.getElementById('id_prod_method').value='DELETE'; document.getElementById('id_articulo').value='{{ producto.id_articulo }}';">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+        
+                                <!-- Botón para modificar -->
+                                <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+                                    onclick="openModifyProducto('{{ producto.id_articulo }}')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                    </svg>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        
+            <!-- Campo oculto para el ID del producto -->
+            <input type="hidden" id="id_articulo" name="id_articulo" value="">
+        </form>
+        
+        <!-- Paginación -->
+        <div class="flex justify-start mt-4">
+            <nav class="inline-flex rounded-md shadow">
+                {% if productos.has_previous %}
+                    <a href="?page={{ productos.previous_page_number }}" 
+                    class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Anterior
+                    </a>
+                {% endif %}
+                
+                {% for num in productos.paginator.page_range %}
+                    {% if num == productos.number %}
+                        <span class="px-3 py-2 bg-indigo-600 border border-gray-300 text-sm font-medium text-white">
+                            {{ num }}
+                        </span>
+                    {% else %}
+                        <a href="?page={{ num }}" 
+                        class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            {{ num }}
+                        </a>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if productos.has_next %}
+                    <a href="?page={{ productos.next_page_number }}" 
+                    class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        Siguiente
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+        
+        <!-- Incluir el modal de productos -->
+        {% block modal_producto %}
+            {% include 'modalProducto.html' %}
+        {% endblock %}
+
+
+
+<script>
+    const agregarProductoBtn = document.querySelector('#agregarProducto');
+    const modificarProductoBtn = document.querySelector('#modificarProducto');
+
+    agregarProductoBtn.addEventListener('click', () => {
+        console.log('Se hizo clic en el botón');
+    
+        // Abrimos modal de agregarProducto
+    
+        const modal = document.querySelector('#modalProducto');
+        modal.classList.remove('hidden');
+        modal.classList.add('block');
+    
+    });
+
+    function openModifyProducto(id_articulo) {
+        console.log('click en modificar', id_articulo);
+    
+        const modal = document.querySelector('#modalProducto');
+        const modalMethod = document.getElementById('modal_method');
+        const modalId = document.getElementById('modal_id_articulo');
+    
+        if (id_articulo) {
+            modalMethod.value = 'UPDATE';
+            modalId.value = id_articulo;
+        } else {
+            modalMethod.value = 'CREATE';
+            modalId.value = '';
+        }
+    
+        modal.classList.remove('hidden');
+    }
+    
+
+</script>
+
+{% endblock content %}

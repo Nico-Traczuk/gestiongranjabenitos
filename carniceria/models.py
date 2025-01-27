@@ -62,6 +62,8 @@ class articulos (models.Model):
     variacion= models.DecimalField(max_digits=25, decimal_places=3, default='0')
     precio_costo = models.DecimalField(max_digits=25, decimal_places=3, default='0')
     precio_venta = models.DecimalField(max_digits=25, decimal_places=3, default='0')
+    def __str__(self):
+        return self.id_articulo
     class Meta:
         db_table = "articulos"
 

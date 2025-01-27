@@ -25,7 +25,10 @@ urlpatterns = [
     path('stock/', views.Viewstock, name='stock'),
     path('ventas/', views.Viewventas, name='ventas'),
     path('reporte/', views.Viewreportes, name='reporte'),
-    path('gestionProductosCompuestos/', views.ViewGestionProductosCompuestos, name='gestionProductosCompuestos'),
-    path('gestionProductos/', views.ViewGestionProductos, name='gestionProductos'),
+    #Gestion es para todo lo que tiene que ver con ABM------------------------------------
+    # path('gestionProductosCompuestos/', views.ViewGestionProductosCompuestos, name='gestionProductosCompuestos'),
+    # path('gestionProductos/', views.ViewGestionProductos, name='gestionProductos'),
+    path('stockCompuesto/', views.ViewStockCompuesto, name='stockCompuesto'),
+    path('stockProducto/', views.ViewStockProducto, name='stockProducto'),
 
 ]

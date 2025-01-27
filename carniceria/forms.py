@@ -5,6 +5,7 @@ from django.shortcuts import render, redirect
 
 class articulo_compuestoForm(forms.ModelForm):
     class Meta:
+        #LE TIENE QUE LLEGAR EL ID UNICO DE REGISTRO PARA QUE DJANGO HAGA UN UPDATE O DELETE!!!!
         model = articulo_compuesto
         fields = ('descripcion', 'id_categoria', 'id_unidad')
         labels = {
@@ -26,8 +27,9 @@ class CategoriaForm(forms.ModelForm):
 
 class stockCompuestoForm(forms.ModelForm):
     class Meta:
+        #LE TIENE QUE LLEGAR EL ID UNICO DE REGISTRO PARA QUE DJANGO HAGA UN UPDATE O DELETE!!!!
         model = stock_compuesto
-        fields = ('id_compuesto', 'cantidad_ingresada', 'peso_inicial')
+        fields = ( 'id_stock_compuesto','id_compuesto', 'cantidad_ingresada', 'peso_inicial')
         labels = {
             'id_compuesto': 'Descripcion',
             'cantidad_ingresada': 'Cantidad Ingresada',
@@ -35,6 +37,7 @@ class stockCompuestoForm(forms.ModelForm):
 
         }
         widgets = {
+            'id_stock_compuesto': forms.HiddenInput(),
             'id_compuesto': forms.Select(attrs={'class': 'form-control w-1/4 ml-5 my-3 px-4 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese una Descripcion'}),
             'cantidad_ingresada': forms.NumberInput(attrs={'class': 'form-control w-1/4 ml-5 my-3 px-4 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese una Cantidad Ingresada'}),
             'peso_inicial': forms.NumberInput(attrs={'class': 'form-control w-1/4 ml-5 my-3 px-4 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese un Peso Inicial'}),
@@ -44,8 +47,9 @@ class stockCompuestoForm(forms.ModelForm):
 
 class productosForm(forms.ModelForm):
     class Meta:
+        #LE TIENE QUE LLEGAR EL ID UNICO DE REGISTRO PARA QUE DJANGO HAGA UN UPDATE O DELETE!!!!
         model = articulos
-        fields = ('id_unidad', 'id_categoria', 'codigo_articulo', 'descripcion', 'precio_costo', 'precio_venta')
+        fields = ('id_articulo','id_unidad', 'id_categoria', 'codigo_articulo', 'descripcion', 'precio_costo', 'precio_venta')
         labels = {
             'id_unidad': 'Tipo de Unidad',
             'id_categoria': 'Categoria',
@@ -55,6 +59,7 @@ class productosForm(forms.ModelForm):
             'precio_venta': 'Precio de Venta',
         }
         widgets = {
+            'id_articulo': forms.HiddenInput(),
             'id_unidad': forms.Select( 
                 attrs={'class': 'form-control capitalize w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline'}
             ),

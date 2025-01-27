@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div>
+    <h1>Stock de productos compuestos</h1>
+
+    <!-- Formulario principal (POST) -->
+    <form id="form-compuesto" action="{% url 'stockCompuesto' %}" method="POST"> {% csrf_token %}
+        <input type="hidden" id="id_comp_method" name="_method" value="POST">
+        <button type="button" id="agregarRes" class="transition duration-200 hover:bg-gray-300 rounded-xl border-2 shadow-xl py-2 px-6 font-bold" 
+            >Agregar Compuesto res / cerdo / pollo</button>
+        
+        <div>
+            <table class="w-full border-2 mt-10 shadow-2xl text-center">
+                <thead>
+                    <tr class="bg-slate-300">
+                        <th class="py-2">Producto</th>
+                        <th>Cantidad</th>
+                        <th>Peso inicial</th>
+                        <th>Peso vendido</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for productoCompuesto in productosCompuestos %}
+                    <tr class="transition border-b-2 duration-200 hover:bg-slate-400">
+                        <td class="py-3 capitalize">{{ productoCompuesto.id_compuesto.descripcion }}</td>
+                        <td>{{ productoCompuesto.cantidad_ingresada }}</td>
+                        <td>{{ productoCompuesto.peso_inicial }} Kg</td>
+                        <td>Aquí iría el peso vendido</td>
+                        <td>
+                            <!-- Botón para eliminar -->
+                            <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
+                                onclick="document.getElementById('id_comp_method').value='DELETE'; document.getElementById('id_stock_compuesto').value='{{ productoCompuesto.id_stock_compuesto }}';">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+
+                            <!-- Botón para modificar -->
+                            <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+                                onclick="openModifyCompuesto('{{ productoCompuesto.id_stock_compuesto }}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p>La idea es que se descuente el stock desde acá. Sumando ventas hasta alcanzar el tope de la media res o pollo o cerdo, y después pasa a la siguiente.</p>
+        </div>
+
+        <!-- Campo oculto para el ID del producto compuesto -->
+        <input type="hidden" id="id_stock_compuesto" name="id_stock_compuesto" value="">
+    </form>
+</div>
+{% block modal_res %}
+    {% include 'modalCompuesto.html'%}
+{% endblock %}
+
+
+
+
+<script>
+    const agregarCompuestoBtn = document.querySelector('#agregarRes');
+
+    agregarCompuestoBtn.addEventListener('click', () => {
+        console.log('Se hizo clic en el botón');
+    
+        // Abrimos modal de agregarProducto
+    
+        const modal = document.querySelector('#modalRes');
+        modal.classList.remove('hidden');
+        modal.classList.add('block');
+    
+    });
+
+	// Modify functions
+	function openModifyCompuesto(id_stock_compuesto) {
+		const modal = document.getElementById('modalRes');
+		const modalMethod = document.getElementById('modal_method');
+		const modalId = document.getElementById('modal_id_stock_compuesto');
+
+		if (id_stock_compuesto) {
+			// Modificar
+			modalMethod.value = 'UPDATE';
+			modalId.value = id_stock_compuesto;
+            
+
+		} else {
+			// Crear
+			modalMethod.value = 'CREATE';
+			modalId.value = '';
+		}
+
+		modal.classList.remove('hidden');
+	}
+
+
+
+</script>
+
+{% endblock content %}
