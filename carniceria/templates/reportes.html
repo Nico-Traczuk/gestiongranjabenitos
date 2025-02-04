@@ -5,13 +5,13 @@
     <div class="flex gap-5 mt-10">
         <input class=" px-6 py-2 rounded shadow-xl border-2" type="date"/>
         <input class=" px-6 py-2 rounded shadow-xl border-2" type="date"/>
-        <button class="px-6 py-2 border rounded-xl shadow-xl border-2 font-bold  bg-green-400 hover:bg-green-500">Buscar</button>
+        <button class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit ">Buscar</button>
     </div>
 
     <div>
         <table>
-            <table class="w-full border-4 mt-10 py-4 px-4"> <!--ESTA TABLA HAY QUE ITERAR EL STOCK DE LA BASE-->
-                <thead class="bg-zinc-400">  <!-- ITERAMOS CON EL FOR DE DJANGO -->
+            <table class="w-full border-2 mt-10 shadow-2xl text-center "> <!--ESTA TABLA HAY QUE ITERAR EL STOCK DE LA BASE-->
+                <thead class="bg-gray-800 text-white">  <!-- ITERAMOS CON EL FOR DE DJANGO -->
                     <tr>
                       <th>Fecha</th>
                       <th>Venta </th>
@@ -20,13 +20,13 @@
                     </tr>
                 </thead>
                     <tbody class="border-4">
-                        <tr class="border-4 font-bold hover:bg-sky-400 hover:text-white">
+                        <tr class="border-2 font-bold hover:bg-zinc-300 ">
                             <td>Dato 1</td>
                             <td>Dato 2</td>
                             <td>Dato 2</td>
                             <td>Dato 3</td>
                         </tr>
-                        <tr class="border-4 font-bold hover:bg-sky-400 hover:text-white">
+                        <tr class="border-2 font-bold hover:bg-zinc-300">
                             <td>Otro dato 1</td>
                             <td>Otro dato 2</td>
                             <td>Otro dato 2</td>

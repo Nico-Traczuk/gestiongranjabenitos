@@ -126,8 +126,20 @@ class ventas_detalle (models.Model):
     cantidad = models.DecimalField(max_digits=25, decimal_places=3)
     precio_unitario = models.DecimalField(max_digits=25, decimal_places=3)
     total = models.DecimalField(max_digits=10, decimal_places=2)
+    id_medio_pago = models.ForeignKey(medio_pago, on_delete=models.CASCADE, db_column='id_medio_pago')
     class Meta:
         db_table = "ventas_detalle"
+
+
+class gastos (models.Model):
+    id_gasto = models.AutoField(primary_key=True)
+    id_empresa = models.ForeignKey(empresa, on_delete=models.CASCADE, db_column='id_empresa')
+    id_sucursal = models.ForeignKey(sucursales, on_delete=models.CASCADE, db_column='id_sucursal')
+    fecha_gasto = models.DateTimeField()
+    descripcion = models.CharField(max_length=100)
+    monto = models.DecimalField(max_digits=25, decimal_places=3)
+    class Meta:
+        db_table = "gastos"
 
 
 # class lista_precios (models.Model):

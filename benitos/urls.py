@@ -18,11 +18,14 @@ from django.contrib import admin
 from django.urls import path
 from carniceria import views
 from carniceria.views import *
+from users.views import ViewLogin
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.Viewhome, name='home'),
-    path('stock/', views.Viewstock, name='stock'),
+    path('', ViewLogin, name='login'),
+    path('home/', views.Viewhome, name='home'),
+    path('costos/', views.ViewCostos, name='costos'),
+    path('costosTabla', views.ViewCostosTabla, name='costosTabla'),
     path('ventas/', views.Viewventas, name='ventas'),
     path('reporte/', views.Viewreportes, name='reporte'),
     #Gestion es para todo lo que tiene que ver con ABM------------------------------------
@@ -30,5 +33,4 @@ urlpatterns = [
     # path('gestionProductos/', views.ViewGestionProductos, name='gestionProductos'),
     path('stockCompuesto/', views.ViewStockCompuesto, name='stockCompuesto'),
     path('stockProducto/', views.ViewStockProducto, name='stockProducto'),
-
 ]

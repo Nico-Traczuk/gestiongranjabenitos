@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'carniceria',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -74,6 +75,8 @@ STATICFILES_DIRS = [
     ('tailwind', 'https://cdn.tailwindcss.com'),
     BASE_DIR / 'static',
 ]
+# LOGIN_REDIRECT_URL = 'home'  # Página a la que se redirige después del inicio de sesión
+# LOGOUT_REDIRECT_URL = 'home'  # Página a la que se redirige después del cierre de sesión
 
 WSGI_APPLICATION = 'benitos.wsgi.application'
 

@@ -1,11 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods 
 from django.http import JsonResponse
 from django.db.models import Q
+import json
 from .templates import *
 from .models import *
-from .forms import stockCompuestoForm, productosForm
+from .forms import stockCompuestoForm, productosForm, gastosForm
 from datetime import datetime, timedelta
 @require_http_methods(["GET", "POST", "PUT", "DELETE"])
 #-----------------------------------------------------------------------------
@@ -293,121 +294,193 @@ def ViewStockCompuesto(request):
     return render(request, 'stockCompuestos.html', context)
 
 #-----------------------------------------------------------------------------
-def Viewstock(request):
-	# Session variables initialization
-	id_sucursal = request.session.get('id_sucursal')
-	id_empresa = request.session.get('id_empresa')
-	id_usuario = request.session.get('id_usuario')
-	id_tipo_usuario = request.session.get('id_tipo_usuario')
-	
-	# Initialize forms as None
-	producto_form = None
-	compuesto_form = None
-	
-	print(request.method)
 
-	if request.method == 'POST':
-		origen = request.POST.get('origen')
-		method = request.POST.get('method')
-		print(origen, method)
+def ViewCostos(request):
+    
+    costos_form = gastosForm()
+    
+    
+    context = {
+        'costos_form': costos_form
+    }
+
+    return render(request, 'costos.html', context)
+
+#-----------------------------------------------------------------------------
+
+
+def ViewCostosTabla (request):
+    
+    return render(request, 'costosTabla.html')
+
+
+#-----------------------------------------------------------------------------
+
+
+# Vista para procesar la venta
+def procesar_venta(request):
+    if request.method == 'POST':
+        try:
+            # Parsear los datos recibidos desde el frontend
+            data = json.loads(request.body)
+            
+            # Obtener los datos de la cabecera de la venta
+            id_empresa = data.get('id_empresa')
+            id_sucursal = data.get('id_sucursal')
+            id_medio_pago = data.get('id_medio_pago')
+            total_general = data.get('total')
+            detalles = data.get('detalles')
+
+            # Crear la cabecera de la venta
+            cabecera = ventas_cabecera.objects.create(
+                id_empresa_id=id_empresa,
+                id_sucursal_id=id_sucursal,
+                id_medio_pago_id=id_medio_pago,
+                fecha_venta=datetime.now(),  # Fecha y hora actual
+                total_general=total_general,
+            )
+
+            # Crear los detalles de la venta
+            for detalle in detalles:
+                ventas_detalle.objects.create(
+                    id_cabecera=cabecera,
+                    id_articulo_id=detalle['id_articulo'],
+                    cantidad=detalle['cantidad'],
+                    precio_unitario=detalle['precio_unitario'],
+                    total=detalle['total'],
+                    id_medio_pago_id=id_medio_pago,  # Puedes cambiarlo si es diferente por detalle
+                )
+
+            # Respuesta exitosa
+            return render (request, 'ventas.html')
+
+        except Exception as e:
+            # Manejo de errores
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+
+
+
+
+#-----------------------------------------------------------------------------------------
+
+# def Viewstock(request):
+# 	# Session variables initialization
+# 	id_sucursal = request.session.get('id_sucursal')
+# 	id_empresa = request.session.get('id_empresa')
+# 	id_usuario = request.session.get('id_usuario')
+# 	id_tipo_usuario = request.session.get('id_tipo_usuario')
+	
+# 	# Initialize forms as None
+# 	producto_form = None
+# 	compuesto_form = None
+	
+# 	print(request.method)
+
+# 	if request.method == 'POST':
+# 		origen = request.POST.get('origen')
+# 		method = request.POST.get('method')
+# 		print(origen, method)
 		
-	#     if origen == 'ART':
-	#         producto_form = productosForm(request.POST)
-	#         if producto_form.is_valid():
-	#             producto_form.save()
-	#             return redirect('stock')
-	#     elif origen == 'COMP':
-	#         compuesto_form = stockCompuestoForm(request.POST)
-	#         if compuesto_form.is_valid():
-	#             compuesto_form.save()
-	#             return redirect('stock')
-	#     else:
-	#         print("ERROR: Invalid origen in POST")
-	#         return redirect('stock')
+# 	#     if origen == 'ART':
+# 	#         producto_form = productosForm(request.POST)
+# 	#         if producto_form.is_valid():
+# 	#             producto_form.save()
+# 	#             return redirect('stock')
+# 	#     elif origen == 'COMP':
+# 	#         compuesto_form = stockCompuestoForm(request.POST)
+# 	#         if compuesto_form.is_valid():
+# 	#             compuesto_form.save()
+# 	#             return redirect('stock')
+# 	#     else:
+# 	#         print("ERROR: Invalid origen in POST")
+# 	#         return redirect('stock')
 	
 	
 			
-	elif request.method == 'DELETE':
-		origen = request.GET.get('origen')
-		method = request.GET.get('method')	#No hace falta evaluar esto ya que sabemos que es un DELETE con origen COMP/ART
+# 	elif request.method == 'DELETE':
+# 		origen = request.GET.get('origen')
+# 		method = request.GET.get('method')	#No hace falta evaluar esto ya que sabemos que es un DELETE con origen COMP/ART
 		
-		if origen == 'COMP':
-			print("BORRANDO COMPUESTO")
-		elif origen == 'ART':
-			print("BORRANDO ARTICULO")
-	#     # Django doesn't process PUT/DELETE body automatically
-	#     # We need to parse it manually if you're sending as PUT/DELETE
-	#     # Alternatively, you could use POST with a hidden _method field
+# 		if origen == 'COMP':
+# 			print("BORRANDO COMPUESTO")
+# 		elif origen == 'ART':
+# 			print("BORRANDO ARTICULO")
+# 	#     # Django doesn't process PUT/DELETE body automatically
+# 	#     # We need to parse it manually if you're sending as PUT/DELETE
+# 	#     # Alternatively, you could use POST with a hidden _method field
 		
-	#     if request.method == 'DELETE':
-	#         origen = request.GET.get('origen')
-	#         try:
-	#             if origen == 'ART':
-	#                 id_art = request.GET.get('id_articulo')
-	#                 articulo = articulos.objects.get(id_articulo=id_art)
-	#                 articulo.delete()
-	#                 return JsonResponse({'status': 'success'})
-	#             elif origen == 'COMP':
-	#                 id_stock_comp = request.GET.get('id_stock_compuesto')
-	#                 stock_compuesto_obj = stock_compuesto.objects.get(
-	#                     id_stock_compuesto=id_stock_comp
-	#                 )
-	#                 stock_compuesto_obj.delete()
-	#                 return JsonResponse({'status': 'success'})
-	#         except (articulos.DoesNotExist, stock_compuesto.DoesNotExist):
-	#             return JsonResponse({'status': 'error'}, status=404)
+# 	#     if request.method == 'DELETE':
+# 	#         origen = request.GET.get('origen')
+# 	#         try:
+# 	#             if origen == 'ART':
+# 	#                 id_art = request.GET.get('id_articulo')
+# 	#                 articulo = articulos.objects.get(id_articulo=id_art)
+# 	#                 articulo.delete()
+# 	#                 return JsonResponse({'status': 'success'})
+# 	#             elif origen == 'COMP':
+# 	#                 id_stock_comp = request.GET.get('id_stock_compuesto')
+# 	#                 stock_compuesto_obj = stock_compuesto.objects.get(
+# 	#                     id_stock_compuesto=id_stock_comp
+# 	#                 )
+# 	#                 stock_compuesto_obj.delete()
+# 	#                 return JsonResponse({'status': 'success'})
+# 	#         except (articulos.DoesNotExist, stock_compuesto.DoesNotExist):
+# 	#             return JsonResponse({'status': 'error'}, status=404)
 		
-	#     elif request.method == 'PUT':
-	#         origen = request.GET.get('origen', id)
-	#         try:
-	#             if origen == 'ART':
-	#                 id = request.GET.get('id_articulo')
-	#                 articulo = articulos.objects.get(id_articulo=id)
-	#                 form = productosForm(request.PUT, instance=articulo)
-	#                 if form.is_valid():
-	#                     form.save()
-	#                     return JsonResponse({'status': 'success'})
-	#             elif origen == 'COMP':
-	#                 id_stock_comp = request.GET.get('id_stock_compuesto')
-	#                 stock_compuesto_obj = stock_compuesto.objects.get(
-	#                     id_stock_compuesto=id_stock_comp
-	#                 )
-	#                 form = stockCompuestoForm(request.PUT, instance=stock_compuesto_obj)
-	#                 if form.is_valid():
-	#                     form.save()
-	#                     return JsonResponse({'status': 'success'})
-	#         except (articulos.DoesNotExist, stock_compuesto.DoesNotExist):
-	#             return JsonResponse({'status': 'error'}, status=404)
+# 	#     elif request.method == 'PUT':
+# 	#         origen = request.GET.get('origen', id)
+# 	#         try:
+# 	#             if origen == 'ART':
+# 	#                 id = request.GET.get('id_articulo')
+# 	#                 articulo = articulos.objects.get(id_articulo=id)
+# 	#                 form = productosForm(request.PUT, instance=articulo)
+# 	#                 if form.is_valid():
+# 	#                     form.save()
+# 	#                     return JsonResponse({'status': 'success'})
+# 	#             elif origen == 'COMP':
+# 	#                 id_stock_comp = request.GET.get('id_stock_compuesto')
+# 	#                 stock_compuesto_obj = stock_compuesto.objects.get(
+# 	#                     id_stock_compuesto=id_stock_comp
+# 	#                 )
+# 	#                 form = stockCompuestoForm(request.PUT, instance=stock_compuesto_obj)
+# 	#                 if form.is_valid():
+# 	#                     form.save()
+# 	#                     return JsonResponse({'status': 'success'})
+# 	#         except (articulos.DoesNotExist, stock_compuesto.DoesNotExist):
+# 	#             return JsonResponse({'status': 'error'}, status=404)
 	
 	
-	# Formularios
-	producto_form = productosForm()
-	compuesto_form = stockCompuestoForm()
+# 	# Formularios
+# 	producto_form = productosForm()
+# 	compuesto_form = stockCompuestoForm()
 	
-	# GET a los productos para mostrarlos
-	productos = articulos.objects.all()  
-	productosCompuestos = stock_compuesto.objects.all()
+# 	# GET a los productos para mostrarlos
+# 	productos = articulos.objects.all()  
+# 	productosCompuestos = stock_compuesto.objects.all()
 	
-	# Pagination 
-	paginator = Paginator(productos, 10)
-	page = request.GET.get('page')
+# 	# Pagination 
+# 	paginator = Paginator(productos, 10)
+# 	page = request.GET.get('page')
 	
-	try:
-		productos_paginados = paginator.page(page)
-	except PageNotAnInteger:
-		productos_paginados = paginator.page(1)
-	except EmptyPage:
-		productos_paginados = paginator.page(paginator.num_pages)
+# 	try:
+# 		productos_paginados = paginator.page(page)
+# 	except PageNotAnInteger:
+# 		productos_paginados = paginator.page(1)
+# 	except EmptyPage:
+# 		productos_paginados = paginator.page(paginator.num_pages)
 	
-	# Prepare context with all necessary data
-	context = {
-		'productos': productos_paginados,
-		'productosCompuestos': productosCompuestos,
-		'producto_form': producto_form,
-		'compuesto_form': compuesto_form,
-		'id_sucursal': id_sucursal,
-		'id_empresa': id_empresa,
-	}
+# 	# Prepare context with all necessary data
+# 	context = {
+# 		'productos': productos_paginados,
+# 		'productosCompuestos': productosCompuestos,
+# 		'producto_form': producto_form,
+# 		'compuesto_form': compuesto_form,
+# 		'id_sucursal': id_sucursal,
+# 		'id_empresa': id_empresa,
+# 	}
 	
-	return render(request, 'stock.html', context)
+# 	return render(request, 'stock.html', context)
 

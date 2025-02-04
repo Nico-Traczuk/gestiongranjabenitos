@@ -1,7 +1,8 @@
 from django import forms
-from .models import categorias, articulos, tipo_unidad, articulo_compuesto, stock_compuesto
+from .models import categorias, articulos, tipo_unidad, articulo_compuesto, stock_compuesto, gastos
 from django.shortcuts import render, redirect
 
+#------------------------------------------------------------------------------------------#
 
 class articulo_compuestoForm(forms.ModelForm):
     class Meta:
@@ -24,6 +25,7 @@ class CategoriaForm(forms.ModelForm):
         model = categorias
         fields = ('id_categoria', 'categoria')
 
+#------------------------------------------------------------------------------------------#
 
 class stockCompuestoForm(forms.ModelForm):
     class Meta:
@@ -44,7 +46,7 @@ class stockCompuestoForm(forms.ModelForm):
         }
             
 
-
+#------------------------------------------------------------------------------------------#
 class productosForm(forms.ModelForm):
     class Meta:
         #LE TIENE QUE LLEGAR EL ID UNICO DE REGISTRO PARA QUE DJANGO HAGA UN UPDATE O DELETE!!!!
@@ -61,14 +63,46 @@ class productosForm(forms.ModelForm):
         widgets = {
             'id_articulo': forms.HiddenInput(),
             'id_unidad': forms.Select( 
-                attrs={'class': 'form-control capitalize w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline'}
+                attrs={'class': ' form-control capitalize ml-5 px-4 w-1/2 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline'}
             ),
-            'id_categoria': forms.Select(attrs={'class': 'form-control capitalize w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese una Categoria'}),
-            'codigo_articulo': forms.TextInput(attrs={'class': 'form-control w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese un Codigo'}),
-            'descripcion': forms.TextInput(attrs={'class': 'form-control w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese una Descripcion'}),
-            'precio_costo': forms.NumberInput(attrs={'class': 'form-control w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese un Precio de Costo'}),
-            'precio_venta': forms.NumberInput(attrs={'class': 'form-control w-1/4 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese un Precio de Venta'}),
+            'id_categoria': forms.Select(attrs={'class': 'form-control capitalize w-1/2  ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline', 'placeholder': 'Ingrese una Categoria'}),
+            'codigo_articulo': forms.TextInput(attrs={'class': 'form-control w-1/2  ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200' , 'placeholder': 'Ingrese un Codigo'}),
+            'descripcion': forms.TextInput(attrs={'class': 'form-control w-1/2  ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese una Descripcion'}),
+            'precio_costo': forms.NumberInput(attrs={'class': 'form-control w-1/2  ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese un Precio de Costo'}),
+            'precio_venta': forms.NumberInput(attrs={'class': 'form-control  w-1/2 ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese un Precio de Venta'}),
         }
 
+#------------------------------------------------------------------------------------------#
 
+
+class gastosForm(forms.ModelForm):
+    class Meta:
+        model = gastos
+        fields = ('id_gasto','id_empresa', 'id_sucursal', 'fecha_gasto', 'descripcion', 'monto')
+        labels = {
+            'id_empresa': 'Empresa',
+            'id_sucursal': 'Sucursal',
+            'fecha_gasto': 'Fecha',
+            'descripcion': 'Descripcion',
+            'monto': 'Monto',
+        }
+        widgets = {
+            'id_gasto': forms.HiddenInput(),
+            'id_empresa': forms.Select( 
+                attrs={'class': ' form-control capitalize ml-5 px-4   my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline'}
+            ),
+            'id_sucursal': forms.Select( 
+                attrs={'class': ' form-control capitalize ml-5 px-4   my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline'}  
+            ),
+            'fecha_gasto': forms.DateInput(
+                attrs={'class': 'form-control    ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese una Fecha'} 
+            ),
+            'descripcion': forms.TextInput(
+                attrs={'class': 'form-control col-span-3  ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese una Descripcion'}
+            ),
+            'monto': forms.NumberInput(
+                attrs={'class': 'form-control    ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese un Monto'}
+            ),
+            
+        }
 

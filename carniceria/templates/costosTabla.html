@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+    <h1>Tabla de costos</h1>
+
+
+    <div class="container">
+        <div>
+			<table class="w-full border-2 mt-10 shadow-2xl text-center ">
+				<thead>
+					<tr>
+						<th>Fecha</th>
+						<th>Concepto</th>
+						<th>Monto</th>
+					</tr>
+				</thead>
+				<tbody>
+					{% for gasto in gastos %}
+						<tr>
+							<td>{{ gasto.fecha }}</td>
+							<td>{{ gasto.concepto }}</td>
+							<td>{{ gasto.monto }}</td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+
+    </div>
+{% endblock content %}

@@ -7,13 +7,15 @@
     <!-- Formulario principal (POST) -->
     <form id="form-compuesto" action="{% url 'stockCompuesto' %}" method="POST"> {% csrf_token %}
         <input type="hidden" id="id_comp_method" name="_method" value="POST">
-        <button type="button" id="agregarRes" class="transition duration-200 hover:bg-gray-300 rounded-xl border-2 shadow-xl py-2 px-6 font-bold" 
+        <button type="button" id="agregarRes" class="transition duration-200 inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit " 
             >Agregar Compuesto res / cerdo / pollo</button>
         
         <div>
+            <p>La idea es que se descuente el stock desde acá. Sumando ventas hasta alcanzar el tope de la media res o pollo o cerdo, y después pasa a la siguiente.</p>
+
             <table class="w-full border-2 mt-10 shadow-2xl text-center">
                 <thead>
-                    <tr class="bg-slate-300">
+                    <tr class="bg-gray-700 text-white">
                         <th class="py-2">Producto</th>
                         <th>Cantidad</th>
                         <th>Peso inicial</th>
@@ -24,7 +26,7 @@
                 <tbody>
                     {% for productoCompuesto in productosCompuestos %}
                     <tr class="transition border-b-2 duration-200 hover:bg-slate-400">
-                        <td class="py-3 capitalize">{{ productoCompuesto.id_compuesto.descripcion }}</td>
+                        <td class="py-1 capitalize">{{ productoCompuesto.id_compuesto.descripcion }}</td>
                         <td>{{ productoCompuesto.cantidad_ingresada }}</td>
                         <td>{{ productoCompuesto.peso_inicial }} Kg</td>
                         <td>Aquí iría el peso vendido</td>
@@ -49,7 +51,6 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <p>La idea es que se descuente el stock desde acá. Sumando ventas hasta alcanzar el tope de la media res o pollo o cerdo, y después pasa a la siguiente.</p>
         </div>
 
         <!-- Campo oculto para el ID del producto compuesto -->

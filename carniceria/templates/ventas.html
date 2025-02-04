@@ -22,7 +22,7 @@
                                value="{{ search_query }}"  
                         />
                         <button id="agregarProducto" 
-                                class="bg-green-500 px-6 py-2 rounded-xl">
+                                class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-md w-fit ">
                             Agregar Producto
                         </button>
                     </div>
@@ -30,7 +30,7 @@
             </div>
             <table class="w-full border-2 mt-5 shadow-2xl text-center ">
                 <thead>
-                    <tr class="bg-slate-300">
+                    <tr class="bg-gray-800 text-white">
                         <th class="py-2">Producto</th>
                         <th>Código</th>
                         <th>Acciones</th>
@@ -90,7 +90,7 @@
         <div class="flex flex-col rounded-xl justify-between gap-5 w-1/2 bg-gray-300">
             <div class="">
                 
-                <ul class="flex flex-col gap-2 px-4 py-2" id="lista-productos">
+                <ul class="flex flex-col gap-2 mt-0 px-4 py-2" id="lista-productos">
                     <li id="productos"></li>
                 </ul>
             </div>
@@ -98,20 +98,20 @@
             <div>
                 <div  class="flex justify-between items-center py-2 px-5 mx-2 rounded-xl bg-white">
                     <p class="text-xl">Total Venta: <span id="totalVenta"> $0 </span></p>
-                    <button type="button" id="cerrarVentaBtn" class="bg-green-400 px-6 py-2 rounded-xl font-bold text-white hover:bg-green-500" onclick="cerrarVenta()">Cerrar venta</button>
+                    <button type="button" id="cerrarVentaBtn" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit " onclick="cerrarVenta()">Cerrar venta</button>
                 </div>
                 <div class="flex gap-5 py-2 px-5 justify-between text-xl bg-white m-2 rounded-xl">
                     <div>
                         <label>Efectivo</label>
-                        <input id="efectivo" type="radio" name="tipoPago" />
+                        <input id="efectivo" type="radio" name="tipoPago" value="1" />
                     </div>
                     <div>
                         <label>Transferencia</label>
-                        <input id="transferencia" type="radio" name="tipoPago" />
+                        <input id="transferencia" type="radio" name="tipoPago" value="2" />
                     </div>
                     <div>
                         <label>Mercado Pago</label>
-                        <input id="mercadoPago" type="radio" name="tipoPago" />
+                        <input id="mercadoPago" type="radio" name="tipoPago" value="3" />
                     </div>
                 </div>
 
@@ -122,6 +122,7 @@
 
 
 <script>
+
     /*Iteracion sobre productos para tener los datos de cada producto*/
     const productos = [
         {% for producto in productos %}
@@ -156,11 +157,11 @@ function agregarProducto(id_articulo) {
     const listaProductos = document.getElementById('lista-productos');
     const productoHTML = document.createElement('li');
     productoHTML.innerHTML = `
-    <div id="producto${id_articulo}" class="flex flex-col bg-white rounded-lg p-4 gap-3 overflow-hidden shadow-xl">
+    <div id="producto${id_articulo}" class="flex flex-col bg-white rounded-lg py-2 px-6 gap-3 overflow-hidden shadow-xl">
     
       <div class="flex justify-between items-center">
         <span>Producto: ${producto.descripcion}</span>
-        <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onclick="eliminarVenta('${id_articulo}')">X</button>
+        <button class="bg-red-500 hover:bg-red-700 text-white font-bold rounded-full py-2 px-4 rounded" onclick="eliminarVenta('${id_articulo}')">X</button>
         
       </div>
 
@@ -315,13 +316,11 @@ function eliminarVenta(id_articulo) {
 function cerrarVenta() {
 
     const detallesVenta = productosSeleccionados.map(producto => {
-        const cantidadInput = document.getElementById(`cantidad${producto.id_articulo}`);
-        const precioVentaInput = document.getElementById(`precioVenta${producto.id_articulo}`);
-        
-        const cantidad = parseFloat(cantidadInput.value);
-        const precioUnitario = parseFloat(precioVentaInput.value);
-        const total = cantidad * precioUnitario;
-
+    const cantidadInput = document.getElementById(`cantidad${producto.id_articulo}`);
+    const precioVentaInput = document.getElementById(`precioVenta${producto.id_articulo}`);
+    const cantidad = parseFloat(cantidadInput.value);
+    const precioUnitario = parseFloat(precioVentaInput.value);
+    const total = cantidad * precioUnitario;
         return {
             id_articulo: producto.id_articulo, // ID del artículo
             cantidad: cantidad, // Cantidad vendida
@@ -331,20 +330,41 @@ function cerrarVenta() {
     });
 
     // Crear el objeto con los datos de la venta
-    const venta = {
-        id_cabecera: null, // Falta obtener este valor 
-        total_venta: totalVenta, // Total general de la venta
-        detalles: detallesVenta, // Lista de detalles de la venta
-    };
+        
+        const venta = {
+            id_empresa: 1, // ID de la empresa (debe obtenerse dinámicamente)
+            id_sucursal: 1, // ID de la sucursal (debe obtenerse dinámicamente)
+            id_medio_pago: document.querySelector('input[name="tipoPago"]:checked').value, // Medio de pago
+            total: totalVenta, // Total general de la venta
+            detalles: detallesVenta, // Lista de detalles de la venta
+        };
 
     // Mostrar en consola (para debugging)
     console.log('Datos de la venta:', venta);
 
-    // Mostrar una alerta de "Venta cerrada"
-    alert('Venta cerrada');
+    //---------------------------------------------------------------------------
 
+    // Enviar la venta al backend
+
+    // fetch('/ventas/', {
+    //     method: 'POST',
+    //     headers: {
+    //         'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify(venta),
+    // }).then(response => {
+    //     if (response.ok) {
+    //         console.log('Venta creada correctamente');
+    //     } else {
+    //         console.error('Error al crear la venta');
+    //     }
+    // })
+    
+    // Mostrar una alerta de "Venta cerrada"
+    alert('Venta cerrada exitosamente');
     // Limpiamos y preparamos para una proxima venta
     inicializarEstadoVenta();
+
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -362,7 +382,19 @@ function inicializarEstadoVenta() {
 
 
 }
+/*--------------------------------------------------------------------------------*/
 
+function divAlerta(mensaje) {
+    const divAlerta = document.createElement('div');
+    divAlerta.classList.add('bg-green-400', 'px-6', 'py-2', 'text-white', 'text-center', 'font-bold', 'rounded-xl', 'text-xl', 'animate__animated', 'animate__zoomIn', 'alerta-error');
+    divAlerta.textContent = mensaje;
+    const productTable = document.querySelector('#productos');
+    productTable.appendChild(divAlerta);
+    setTimeout(() => {
+        divAlerta.classList.add('animate__zoomOut');
+    }, 1500);
+    
+}
 
 /*-------------------------------------------------------------------------------*/    
       /*   BUSCADOR DE PRODUCTOS     */

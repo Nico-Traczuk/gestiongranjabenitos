@@ -6,7 +6,7 @@
         <form id="form-producto" action="{% url 'stockProducto' %}" method="POST">{% csrf_token %}
             <input type="hidden" id="id_prod_method" name="_method" value="POST">
             <!-- Botón para agregar producto -->
-            <button type="button" id="agregarProducto" class="transition duration-200 hover:bg-gray-300 rounded-xl border-2 shadow-xl py-2 px-6 font-bold"
+            <button type="button" id="agregarProducto" class="transition duration-200 inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit "
                  >
                 Agregar Producto
             </button>
@@ -15,7 +15,7 @@
             <div>
                 <table class="w-full border-2 mt-10 shadow-2xl text-center">
                     <thead>
-                        <tr class="bg-slate-300">
+                        <tr class="bg-gray-700 text-white">
                             <th class="py-2">Descripción</th>
                             <th>Categoría</th>
                             <th>Tipo Unidad</th>
@@ -26,7 +26,7 @@
                     <tbody>
                         {% for producto in productos %}
                         <tr class="transition border-b-2 duration-200 hover:bg-slate-400">
-                            <td class="py-3">{{ producto.descripcion }}</td>
+                            <td class="py-1">{{ producto.descripcion }}</td>
                             <td class="capitalize">{{ producto.id_categoria.categoria }}</td>
                             <td class="capitalize">{{ producto.id_unidad.tipo_unidad }}</td>
                             <td>{{ producto.precio_venta }}</td>
@@ -90,6 +90,7 @@
         </div>
         
         <!-- Incluir el modal de productos -->
+
         {% block modal_producto %}
             {% include 'modalProducto.html' %}
         {% endblock %}
