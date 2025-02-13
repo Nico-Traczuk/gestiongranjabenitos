@@ -1,25 +1,48 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <style>
-    #lista-productos {
-            max-height: 65vh;
-            overflow-y: scroll;
-        }
-    </style>
-    
-    <div class="flex justify-between h-100">
-        <div>
+<style>
+    #detalleVentaTable {
+        max-height: 500px;
+        max-width: 100%;
+        margin: 0 auto;
+        border-collapse: collapse;
+        border-spacing: 0;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        overflow-y: scroll;
+    }
 
+    #detalleVentaTable::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    #detalleVentaTable::-webkit-scrollbar-thumb {
+        background-color: #333;
+        border-radius: 10px;
+    }
+
+    #detalleVentaTable::-webkit-scrollbar-track {
+        background-color: #f9f9f9;
+    }
+</style>
+    <h1 class="text-center text-2xl font-bold mb-4">Seccion de venta</h1>
+    <div class="flex flex-col  min-h-[33rem]">
             <div class="flex flex-col">
                 <div class="mb-4">
-                    <label>Ingrese o escanee su codigo aca</label>
+                    <label>Haga click en el campo o aprefe "F2" para ingresar el codigo</label>
                     <div>
                         <input id="inputProductos" 
                                type="text" 
                                placeholder="Escanee o escriba el codigo" 
                                class="border rounded-xl p-2"
                                value="{{ search_query }}"  
+                        />
+                        <input id="cant_kilos" 
+                               type="text" 
+                               placeholder="Kg" 
+                               class="border rounded-xl p-2"
+                               value="0.0"  
                         />
                         <button id="agregarProducto" 
                                 class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-md w-fit ">
@@ -28,7 +51,7 @@
                     </div>
                 </div>
             </div>
-            <table class="w-full border-2 mt-5 shadow-2xl text-center ">
+            <table class="w-full border-2 mt-5 shadow-2xl text-center hidden ">
                 <thead>
                     <tr class="bg-gray-800 text-white">
                         <th class="py-2">Producto</th>
@@ -54,7 +77,7 @@
                     {% endfor %}
                 </tbody>
             </table>
-            <div class="flex justify-center mt-4">
+            <!-- <div class="flex justify-center mt-4">
                 <nav class="inline-flex rounded-md shadow">
                     {% if productos.has_previous %}
                         <a href="?page={{ productos.previous_page_number }}" 
@@ -83,19 +106,22 @@
                         </a>
                     {% endif %}
                 </nav>
-            </div>
-        </div>
+            </div> -->
+        
         
 
-        <div class="flex flex-col rounded-xl justify-between gap-5 w-1/2 bg-gray-300">
+        <!-- <div class="flex flex-col rounded-xl justify-between gap-5 w-1/2 bg-gray-300">
             <div class="">
                 
                 <ul class="flex flex-col gap-2 mt-0 px-4 py-2" id="lista-productos">
                     <li id="productos"></li>
+
+
                 </ul>
             </div>
 
             <div>
+                <input type="hidden" id="csrf-token" value="{{ csrf_token }}">
                 <div  class="flex justify-between items-center py-2 px-5 mx-2 rounded-xl bg-white">
                     <p class="text-xl">Total Venta: <span id="totalVenta"> $0 </span></p>
                     <button type="button" id="cerrarVentaBtn" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit " onclick="cerrarVenta()">Cerrar venta</button>
@@ -114,15 +140,83 @@
                         <input id="mercadoPago" type="radio" name="tipoPago" value="3" />
                     </div>
                 </div>
-
             </div>
+        </div> -->
+
+        <div class="mt-10 ">
+            <form action="/ventas/procesar_venta/" method="POST" class="flex flex-col gap-10">
+                {% csrf_token %}
+                <table id="detalleVentaTable" class="w-full border mt-10 shadow-2xl bg-gray-800 text-white text-center  mb-10">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detalleVenta" class="bg-white text-black">
+                        <tr>
+                        </tr>
+                    </tbody>
+                </table>
+    
+    
+                <div class="flex gap-5 py-2 px-5 justify-between text-xl bg-white m-2 rounded-xl border-2">
+                    <div>
+                        <div>
+                            <label>Efectivo (F6)</label>
+                            <input id="efectivo" type="radio" name="tipoPago" value="1" accesskey="F6"/>
+                        </div>
+                        <div>
+                            <label>Transferencia (F7)</label>
+                            <input id="transferencia" type="radio" name="tipoPago" value="2" accesskey="F7" />
+                        </div>
+                        <div>
+                            <label>Mercado Pago (F8)</label>
+                            <input id="mercadoPago" type="radio" name="tipoPago" value="3"  accesskey="F8"/>
+                        </div>
+                    </div>
+                    <div  class="flex justify-between gap-5 items-center py-2 px-5 mx-2 rounded-xl bg-white">
+                        <p class="text-xl">Total Venta: <span id="totalVenta"> $0 </span></p>
+                        <button type="button" id="cerrarVentaBtn" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit " onclick="cerrarVenta()">Cerrar venta (F12)</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
-</div>
+
+    
+    
+
+
+
 
 
 <script>
 
+const efectivoInput = document.getElementById('efectivo');
+const transferenciaInput = document.getElementById('transferencia');
+const mercadoPagoInput = document.getElementById('mercadoPago');
+const inputProductos = document.getElementById('inputProductos');
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'F2' || event.key === 'F5' || event.key === 'F6' || event.key === 'F7' || event.key === 'F8' || event.key === 'F12') {
+    event.preventDefault(); // Cancela el evento por defecto
+    // Aquí puedes agregar el código para seleccionar el input de radio correspondiente
+    if(event.key === 'F2') {
+      inputProductos.focus();
+    } else if (event.key === 'F6') {
+      efectivoInput.checked = true;
+    } else if (event.key === 'F7') {
+      transferenciaInput.checked = true;
+    } else if (event.key === 'F8') {
+      mercadoPagoInput.checked = true;
+    } else if (event.key === 'F12') {
+      cerrarVenta();
+    }
+  }
+});
     /*Iteracion sobre productos para tener los datos de cada producto*/
     const productos = [
         {% for producto in productos %}
@@ -148,74 +242,170 @@
 
 /*-------------------------------------------------------------------------------*/    
 
-function agregarProducto(id_articulo) {
-    console.log('agregar producto', id_articulo)
+// function agregarProducto(id_articulo, pesoDecimal = null) {
+//     console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal);
     
-    const producto = productos.find(p => p.id_articulo === id_articulo)
-    console.log(producto)
+//     const producto = productos.find(p => p.id_articulo === id_articulo);
+//     console.log(producto);
     
-    const listaProductos = document.getElementById('lista-productos');
-    const productoHTML = document.createElement('li');
-    productoHTML.innerHTML = `
-    <div id="producto${id_articulo}" class="flex flex-col bg-white rounded-lg py-2 px-6 gap-3 overflow-hidden shadow-xl">
-    
-      <div class="flex justify-between items-center">
-        <span>Producto: ${producto.descripcion}</span>
-        <button class="bg-red-500 hover:bg-red-700 text-white font-bold rounded-full py-2 px-4 rounded" onclick="eliminarVenta('${id_articulo}')">X</button>
-        
-      </div>
+//     const listaProductos = document.getElementById('lista-productos');
+//     const productoHTML = document.createElement('li');
 
-      <div>
-        <span>Codigo Articulo: ${producto.codigo_articulo}</span>
-      </div>
-      <div class="flex gap-2">
-        <label>Cantidad x KG:</label>
-        <input class="px-4 rounded border-b-2 bg-transparent" id="cantidad${id_articulo}" type="number" min="0" step="0.1" />
-      </div>
-      <div class="flex gap-2">
-        <label>Precio Venta:</label>
-        <input class="px-4 rounded border-b-2 bg-transparent" id="precioVenta${id_articulo}" type="number" value="${producto.precio_venta}" />
-      </div>
+//     // **Si no hay pesoDecimal, asignamos 1 por defecto**
+//     const cantidadInicial = pesoDecimal !== null ? pesoDecimal : 1;
 
-    </div>
-  `;
+//     productoHTML.innerHTML = `
+//     <div id="producto${id_articulo}" class="flex flex-col bg-white rounded-lg py-2 px-6 gap-3 overflow-hidden shadow-xl">
     
-    listaProductos.appendChild(productoHTML);
-    
-    const inputPrecioVenta = document.getElementById(`precioVenta${id_articulo}`);
-    const inputCantidad = document.getElementById(`cantidad${id_articulo}`);
-    
-    let totalParcialAnterior = 0;
+//       <div class="flex justify-between items-center">
+//         <span>Producto: ${producto.descripcion}</span>
+//         <button class="bg-red-500 hover:bg-red-700 text-white font-bold rounded-full py-2 px-4 rounded" onclick="eliminarVenta('${id_articulo}')">X</button>
+//       </div>
 
-    /* Agregamos evento al input de cantidad para actualizar el total de acuerdo a su cantidad */
-    inputCantidad.addEventListener('change', function() { 
-        const cantidad = parseFloat(inputCantidad.value);
-        const precioVenta = parseFloat(inputPrecioVenta.value);
-        let totalParcial = 0;
-        if (!isNaN(precioVenta) && !isNaN(cantidad)) {
-            totalParcial = cantidad * precioVenta;
-        }
-        totalVenta = 0;
-        for (const id in preciosVentas) {
-            const precio = preciosVentas[id];
-            const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
-            const cantidadValor = parseFloat(cantidadInput.value);
-            if (!isNaN(cantidadValor)) {
-                totalVenta += cantidadValor * precio;
-            }
-        }
-        updateTotalVentas(inputPrecioVenta.id, precioVenta);
-        spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+//       <div>
+//         <span>Codigo Articulo: ${producto.codigo_articulo}</span>
+//       </div>
+      
+//       <div class="flex gap-2">
+//         <label>Cantidad x KG:</label>
+//         <input class="px-4 rounded border-b-2 bg-transparent" id="cantidad${id_articulo}" type="number" min="0" step="0.1" value="${cantidadInicial}" />
+//       </div>
 
+//       <div class="flex gap-2">
+//         <label>Precio Venta:</label>
+//         <input class="px-4 rounded border-b-2 bg-transparent" id="precioVenta${id_articulo}" type="number" value="${producto.precio_venta}" />
+//       </div>
+
+//     </div>
+//   `;
+    
+//     listaProductos.appendChild(productoHTML);
+    
+//     const inputPrecioVenta = document.getElementById(`precioVenta${id_articulo}`);
+//     const inputCantidad = document.getElementById(`cantidad${id_articulo}`);
+    
+//     let totalParcialAnterior = 0;
+
+//     function calcularTotal() {
+//         const cantidad = parseFloat(inputCantidad.value);
+//         const precioVenta = parseFloat(inputPrecioVenta.value);
+//         let totalParcial = 0;
+
+//         if (!isNaN(precioVenta) && !isNaN(cantidad)) {
+//             totalParcial = cantidad * precioVenta;
+//         }
+
+//         totalVenta = 0;
+//         for (const id in preciosVentas) {
+//             const precio = preciosVentas[id];
+//             const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
+//             const cantidadValor = parseFloat(cantidadInput.value);
+//             if (!isNaN(cantidadValor)) {
+//                 totalVenta += cantidadValor * precio;
+//             }
+//         }
+
+//         updateTotalVentas(inputPrecioVenta.id, precioVenta);
+//         spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+//     }
+
+//     // **Ejecutar el cálculo al agregar el producto**
+//     calcularTotal();
+
+//     // **Agregar eventos para actualizar el cálculo si se cambia el valor**
+//     inputCantidad.addEventListener('change', calcularTotal);
+//     inputPrecioVenta.addEventListener('change', calcularTotal);
+
+//     productosSeleccionados.push(producto);
+//     preciosVentas[`precioVenta${id_articulo}`] = producto.precio_venta;
+// }
+
+function agregarProducto(id_articulo, pesoDecimal = null) {
+    console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal);
+
+    const producto = productos.find(p => p.id_articulo === id_articulo);
+    if (!producto) {
+        console.error("Producto no encontrado");
+        return;
+    }
+
+    const detalleVenta = document.getElementById('detalleVenta');
+
+    if (document.getElementById(`fila${id_articulo}`)) {
+        console.log("El producto ya está en la lista.");
+        return;
+    }
+
+    const cantidadInicial = pesoDecimal !== null ? pesoDecimal : 1;
+
+    let fila = document.createElement("tr");
+    fila.id = `fila${id_articulo}`;
+    fila.innerHTML = `
+        <td>${producto.descripcion}</td>
+        <td>
+            <input type="number" id="cantidad${id_articulo}" value="${cantidadInicial}" min="0" step="0.1" class="w-20 text-center" />
+        </td>
+        <td>
+            <input type="number" id="precio${id_articulo}" value="${producto.precio_venta}" class="w-20 text-center" />
+        </td>
+        <td id="subtotal${id_articulo}">$${(cantidadInicial * producto.precio_venta).toFixed(2)}</td>
+        <td>
+            <button class="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded" onclick="eliminarProducto(${id_articulo})">X</button>
+        </td>
+    `;
+
+    detalleVenta.appendChild(fila);
+
+    // **Agregar eventos después de insertar la fila en el DOM**
+    document.getElementById(`cantidad${id_articulo}`).addEventListener("change", () => calcularTotal(id_articulo));
+    document.getElementById(`precio${id_articulo}`).addEventListener("change", () => calcularTotal(id_articulo));
+
+    // **Calcular total inicial**
+    calcularTotal(id_articulo);
+}
+
+
+function calcularTotal(id_articulo) {
+    const cantidadInput = document.getElementById(`cantidad${id_articulo}`);
+    const precioInput = document.getElementById(`precio${id_articulo}`);
+    const subtotalTd = document.getElementById(`subtotal${id_articulo}`);
+
+    console.log(`Buscando elementos para id_articulo=${id_articulo}`);
+    console.log("Cantidad input:", cantidadInput);
+    console.log("Precio input:", precioInput);
+    console.log("Subtotal:", subtotalTd);
+
+    if (!cantidadInput || !precioInput || !subtotalTd) {
+        console.error(`Error: No se encontraron los elementos para id_articulo=${id_articulo}`);
+        return;
+    }
+
+    const cantidad = parseFloat(cantidadInput.value) || 0;
+    const precio = parseFloat(precioInput.value) || 0;
+    const subtotal = cantidad * precio;
+
+    subtotalTd.textContent = `$${subtotal.toFixed(2)}`;
+
+    actualizarTotalVenta();
+}
+
+
+function actualizarTotalVenta() {
+    let totalVenta = 0;
+
+    document.querySelectorAll('[id^="subtotal"]').forEach(subtotal => {
+        const valor = parseFloat(subtotal.textContent.replace('$', '')) || 0;
+        totalVenta += valor;
     });
-    /* Evento input para actualizar la venta, altamente refactorizada la funcion  */
-    inputPrecioVenta.addEventListener('change', function() {
-        const precioVenta = parseFloat(inputPrecioVenta.value);
-        const idInput = inputPrecioVenta.id;
-        updateTotalVentas(idInput, precioVenta);
-    });
-    productosSeleccionados.push(producto);
-    preciosVentas[`precioVenta${id_articulo}`] = producto.precio_venta;
+
+    document.getElementById("totalVenta").textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    console.log("Total Venta actualizado:", totalVenta);
+}
+
+
+function eliminarProducto(id_articulo) {
+    document.getElementById(`fila${id_articulo}`).remove();
+    actualizarTotalVenta();
 }
 
 /*-------------------------------------------------------------------------------*/      
@@ -270,102 +460,117 @@ function eliminarVenta(id_articulo) {
 
 /*-------------------------------------------------------------------------------*/    
     /* Esta es funcion para la venta individual */
-    function updateTotalVenta() {
-        totalVenta = 0;
-        for (const id in preciosVentas) {
-          const precio = preciosVentas[id];
-          const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
-          const cantidadValor = parseFloat(cantidadInput.value);
-          if (!isNaN(cantidadValor)) {
-            totalVenta += cantidadValor * precio;
-          }
-        }
-        spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-      }
- 
-/*-------------------------------------------------------------------------------*/    
- 
-    function updateTotalVentas(idInput, precioVenta) {
-        if (preciosVentas[idInput]) {
-            totalVenta -= preciosVentas[idInput];
-        }
-        if (!isNaN(precioVenta)) {
-            preciosVentas[idInput] = precioVenta;
-        } else {
-            preciosVentas[idInput] = 0;
-        }
-        totalVenta = 0;
-        for (const id in preciosVentas) {
-            const precio = preciosVentas[id];
-            const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
-            const cantidadValor = parseFloat(cantidadInput.value);
-            if (!isNaN(cantidadValor)) {
-                totalVenta += cantidadValor * precio;
-            }
-        }
-        spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-
-    }
-
-
-/*-------------------------------------------------------------------------------*/    
- 
-
-function cerrarVenta() {
-
-    const detallesVenta = productosSeleccionados.map(producto => {
-    const cantidadInput = document.getElementById(`cantidad${producto.id_articulo}`);
-    const precioVentaInput = document.getElementById(`precioVenta${producto.id_articulo}`);
-    const cantidad = parseFloat(cantidadInput.value);
-    const precioUnitario = parseFloat(precioVentaInput.value);
-    const total = cantidad * precioUnitario;
-        return {
-            id_articulo: producto.id_articulo, // ID del artículo
-            cantidad: cantidad, // Cantidad vendida
-            precio_unitario: precioUnitario, // Precio unitario
-            total: total, // Total por artículo
-        };
-    });
-
-    // Crear el objeto con los datos de la venta
-        
-        const venta = {
-            id_empresa: 1, // ID de la empresa (debe obtenerse dinámicamente)
-            id_sucursal: 1, // ID de la sucursal (debe obtenerse dinámicamente)
-            id_medio_pago: document.querySelector('input[name="tipoPago"]:checked').value, // Medio de pago
-            total: totalVenta, // Total general de la venta
-            detalles: detallesVenta, // Lista de detalles de la venta
-        };
-
-    // Mostrar en consola (para debugging)
-    console.log('Datos de la venta:', venta);
-
-    //---------------------------------------------------------------------------
-
-    // Enviar la venta al backend
-
-    // fetch('/ventas/', {
-    //     method: 'POST',
-    //     headers: {
-    //         'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(venta),
-    // }).then(response => {
-    //     if (response.ok) {
-    //         console.log('Venta creada correctamente');
-    //     } else {
-    //         console.error('Error al crear la venta');
+    // function updateTotalVenta() {
+    //     totalVenta = 0;
+    //     for (const id in preciosVentas) {
+    //       const precio = preciosVentas[id];
+    //       const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
+    //       const cantidadValor = parseFloat(cantidadInput.value);
+    //       if (!isNaN(cantidadValor)) {
+    //         totalVenta += cantidadValor * precio;
+    //       }
     //     }
-    // })
-    
-    // Mostrar una alerta de "Venta cerrada"
-    alert('Venta cerrada exitosamente');
-    // Limpiamos y preparamos para una proxima venta
-    inicializarEstadoVenta();
+    //     spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-}
+    //   }
+ 
+/*-------------------------------------------------------------------------------*/    
+ 
+    // function updateTotalVentas(idInput, precioVenta) {
+    //     if (preciosVentas[idInput]) {
+    //         totalVenta -= preciosVentas[idInput];
+    //     }
+    //     if (!isNaN(precioVenta)) {
+    //         preciosVentas[idInput] = precioVenta;
+    //     } else {
+    //         preciosVentas[idInput] = 0;
+    //     }
+    //     totalVenta = 0;
+    //     for (const id in preciosVentas) {
+    //         const precio = preciosVentas[id];
+    //         const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
+    //         const cantidadValor = parseFloat(cantidadInput.value);
+    //         if (!isNaN(cantidadValor)) {
+    //             totalVenta += cantidadValor * precio;
+    //         }
+    //     }
+    //     spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+
+    // }
+
+/*-------------------------------------------------------------------------------*/    
+ 
+document.addEventListener("DOMContentLoaded", function () {
+    document.getElementById("cerrarVentaBtn").addEventListener("click", function (event) {
+        event.preventDefault(); // Evita la recarga de la página
+
+        const form = document.querySelector("form");
+        const filas = document.querySelectorAll("#detalleVenta tr");
+
+        if (filas.length === 0) {
+            alert("No hay productos en la venta.");
+            return;
+        }
+
+        let totalVenta = 0;
+        document.querySelectorAll(".venta-data").forEach(input => input.remove()); // Limpiar datos previos
+
+        filas.forEach(fila => {
+            const id_articulo = fila.id.replace("fila", "");
+            const cantidadInput = document.getElementById(`cantidad${id_articulo}`);
+            const precioInput = document.getElementById(`precio${id_articulo}`);
+
+            if (cantidadInput && precioInput) {
+                const cantidad = parseFloat(cantidadInput.value) || 0;
+                const precioUnitario = parseFloat(precioInput.value) || 0;
+                const total = cantidad * precioUnitario;
+
+                totalVenta += total; 
+
+                const inputHTML = `
+                    <input type="hidden" name="detalles_id_articulo[]" value="${id_articulo}" class="venta-data">
+                    <input type="hidden" name="detalles_cantidad[]" value="${cantidad}" class="venta-data">
+                    <input type="hidden" name="detalles_precio_unitario[]" value="${precioUnitario}" class="venta-data">
+                    <input type="hidden" name="detalles_total[]" value="${total.toFixed(2)}" class="venta-data">
+                `;
+                form.insertAdjacentHTML("beforeend", inputHTML);
+            }
+        });
+
+        totalVenta = parseFloat(totalVenta.toFixed(2));
+        const tipoPago = document.querySelector('input[name="tipoPago"]:checked')?.value || "";
+
+        if (!tipoPago) {
+            alert("Selecciona un método de pago.");
+            return;
+        }
+
+        form.insertAdjacentHTML(
+            "beforeend",
+            `<input type="hidden" name="total" value="${totalVenta}" class="venta-data">
+             <input type="hidden" name="id_medio_pago" value="${tipoPago}" class="venta-data">`
+        );
+
+        if (confirm(`¿Está seguro de cerrar la venta? Total: $${totalVenta}`)) {
+            console.log("Formulario listo para enviar:");
+            const formData = new FormData(form);
+            for (const [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+
+            alert(`Venta cerrada exitosamente. Total: $${totalVenta}`);
+
+            filas.forEach(fila => fila.remove());
+            document.getElementById("totalVenta").textContent = `$0.00`;
+
+            setTimeout(() => form.submit(), 500); // Pequeño delay para asegurar el envío correcto
+        } else {
+            alert("Venta cancelada.");
+        }
+    });
+});
+
 
 /*--------------------------------------------------------------------------------*/
 
@@ -399,31 +604,79 @@ function divAlerta(mensaje) {
 /*-------------------------------------------------------------------------------*/    
       /*   BUSCADOR DE PRODUCTOS     */
     document.addEventListener('DOMContentLoaded', function() {
-        const inputProductos = document.getElementById('inputProductos');
-        const btnAgregar = document.getElementById('agregarProducto');
+    const inputProductos = document.getElementById('inputProductos');
+    const btnAgregar = document.getElementById('agregarProducto');
 
+    console.log("Elemento inputProductos:", inputProductos);
+    console.log("Elemento btnAgregar:", btnAgregar);
 
-        
-        btnAgregar.addEventListener('click', function() {
-            searchProducts();
-        });
-    
-        // Handle Enter key
-        inputProductos.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                searchProducts();
-            }
-        });
-    
-        function searchProducts() {
-            const searchValue = inputProductos.value.trim();
-            
-            // Send search request to server
-            window.location.href = `?search=${searchValue}`;
+    if (!inputProductos || !btnAgregar) {
+        console.error("Uno o más elementos no fueron encontrados en el DOM.");
+        return;
+    }
+
+    btnAgregar.addEventListener('click', function() {
+        searchProducts(inputProductos.value.trim());
+    });
+
+    inputProductos.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchProducts(inputProductos.value.trim());
+        }
+    });
+
+    function searchProducts(inputValue) {
+        console.log("Código ingresado:", inputValue);
+
+        if (!inputValue || isNaN(inputValue)) {
+            console.warn("Entrada inválida. Solo se permiten números.");
+            inputProductos.value = ''; // Limpiar el campo
+            return;
         }
 
+        let codigoArticulo = "";
+        let pesoDecimal = null;
 
-    });
-    
+        if (inputValue.length === 13) {
+            // 🔥 Extraer el código del artículo (4 primeros dígitos DESPUÉS de los primeros 3)
+            codigoArticulo = inputValue.slice(3, 7); // Código del artículo (ej: "0002")
+            const peso = inputValue.slice(7, 12);    // Peso en gramos
+            console.log("Código del artículo extraído:", codigoArticulo);
+            console.log("Peso extraído en formato entero:", peso);
+
+            if (isNaN(peso)) {
+                console.error("El peso no es un número válido.");
+                inputProductos.value = '';
+                return;
+            }
+
+            pesoDecimal = (parseFloat(peso) / 1000).toFixed(3);
+            console.log("Peso convertido a KG:", pesoDecimal);
+        } else if (inputValue.length === 4) {
+            // 🔥 Si ingresan solo 4 dígitos, es una búsqueda manual por código de artículo
+            codigoArticulo = inputValue;
+            console.log("Búsqueda manual por código de artículo:", codigoArticulo);
+        } else {
+            console.warn("El código ingresado no es válido. Debe tener 4 o 14 dígitos.");
+            inputProductos.value = '';
+            return;
+        }
+
+        console.log('codigo articulo antes del cambio', inputProductos.value)
+        inputProductos.value = codigoArticulo;
+        console.log('codigo articulo despues del cambio', inputProductos.value)
+
+        // 🔥 **Buscar el producto en la base de datos por código de artículo*
+        const productoEncontrado = productos.find(p => String(p.codigo_articulo).trim() === inputProductos.value.trim());
+
+        console.log(productoEncontrado)
+
+        agregarProducto(productoEncontrado.id_articulo, pesoDecimal);
+
+        inputProductos.value = ''; // Limpiar el campo
+    }
+});
+
+
 </script>
 {% endblock content %}

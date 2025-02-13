@@ -31,17 +31,17 @@ class stockCompuestoForm(forms.ModelForm):
     class Meta:
         #LE TIENE QUE LLEGAR EL ID UNICO DE REGISTRO PARA QUE DJANGO HAGA UN UPDATE O DELETE!!!!
         model = stock_compuesto
-        fields = ( 'id_stock_compuesto','id_compuesto', 'cantidad_ingresada', 'peso_inicial')
+        fields = ( 'id_stock_compuesto','id_compuesto', 'peso_inicial')
         labels = {
             'id_compuesto': 'Descripcion',
-            'cantidad_ingresada': 'Cantidad Ingresada',
+
             'peso_inicial': 'Peso Inicial',
 
         }
         widgets = {
             'id_stock_compuesto': forms.HiddenInput(),
             'id_compuesto': forms.Select(attrs={'class': 'form-control w-1/4 ml-5 my-3 px-4 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese una Descripcion'}),
-            'cantidad_ingresada': forms.NumberInput(attrs={'class': 'form-control w-1/4 ml-5 my-3 px-4 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese una Cantidad Ingresada'}),
+           
             'peso_inicial': forms.NumberInput(attrs={'class': 'form-control w-1/4 ml-5 my-3 px-4 py-2 rounded-md focus:outline-none focus:shadow-outline', 'placeholder': 'Ingrese un Peso Inicial'}),
         }
             
@@ -95,7 +95,7 @@ class gastosForm(forms.ModelForm):
                 attrs={'class': ' form-control capitalize ml-5 px-4   my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline'}  
             ),
             'fecha_gasto': forms.DateInput(
-                attrs={'class': 'form-control    ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese una Fecha'} 
+                attrs={'class': 'form-control    ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'type': 'date', 'format': '%d %B %Y'}
             ),
             'descripcion': forms.TextInput(
                 attrs={'class': 'form-control col-span-3  ml-5 px-4 my-2 py-2 rounded-md focus:outline-none shadow-lg focus:shadow-outline bg-gray-200', 'placeholder': 'Ingrese una Descripcion'}

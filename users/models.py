@@ -1,27 +1,37 @@
 # ESTAMOS EN MODELOS DE USUARIO
 
 from django.db import models
-from django.contrib.auth.hashers import make_password, check_password
 from carniceria.models import *
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.hashers import make_password
 
+class UserManager(BaseUserManager):
+    def create_user(self, cuit, password=None, **extra_fields):
+        """Crea un usuario con CUIT y contraseña"""
+        if not cuit:
+            raise ValueError("El CUIT es obligatorio")
 
-# creamos el modelo usuario
+        user = self.model(cuit=cuit, **extra_fields)
+        user.password = make_password(password)  # Hashear la contraseña manualmente
+        user.save(using=self._db)
+        return user
 
-class User(models.Model):
+class User(AbstractBaseUser):
     id_user = models.AutoField(primary_key=True)
     cuit = models.CharField(max_length=30, unique=True)
-    password = models.CharField(max_length=128)  # Almacenamos contraseñas encriptadas
+    password = models.CharField(max_length=128)  # Almacenamos la contraseña encriptada
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
-    id_empresa = models.ForeignKey('carniceria.empresa', on_delete=models.CASCADE, default=1)
-    id_sucursal = models.ForeignKey('carniceria.sucursales', on_delete=models.CASCADE, default=1)
-    role = models.CharField(max_length=30)
+    id_empresa = models.ForeignKey('carniceria.empresa', on_delete=models.CASCADE)
+    id_sucursal = models.ForeignKey('carniceria.sucursales', on_delete=models.CASCADE)
+    id_tipo_usuario = models.IntegerField()  # ID como número
+
+    is_active = models.BooleanField(default=True)  # Necesario para autenticación
+
+    objects = UserManager()
+
+    USERNAME_FIELD = 'cuit'  # Django usará CUIT en lugar de username
+    REQUIRED_FIELDS = ['first_name', 'last_name']
+
     class Meta:
         db_table = "users"
-        
-    def set_password(self, password):
-        self.password = make_password(password) #hasheamos la password + seguridad
-    
-    def check_password(self, password): #validamos la password
-        return check_password(password, self.password)
-        

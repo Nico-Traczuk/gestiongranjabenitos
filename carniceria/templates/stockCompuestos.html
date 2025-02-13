@@ -2,7 +2,7 @@
 
 {% block content %}
 <div>
-    <h1>Stock de productos compuestos</h1>
+    <h1 class="text-center text-2xl font-bold mb-4">Stock de productos compuestos</h1>
 
     <!-- Formulario principal (POST) -->
     <form id="form-compuesto" action="{% url 'stockCompuesto' %}" method="POST"> {% csrf_token %}
@@ -11,7 +11,7 @@
             >Agregar Compuesto res / cerdo / pollo</button>
         
         <div>
-            <p>La idea es que se descuente el stock desde acá. Sumando ventas hasta alcanzar el tope de la media res o pollo o cerdo, y después pasa a la siguiente.</p>
+            
 
             <table class="w-full border-2 mt-10 shadow-2xl text-center">
                 <thead>

@@ -35,17 +35,19 @@
                 </div>
 
 
-                <form method="POST" class="sm:w-2/3 w-full px-4 lg:px-0 mx-auto" id="form">
+                <form method="POST" action="{% url 'login' %}" class="sm:w-2/3 w-full px-4 lg:px-0 mx-auto" id="form">
                     {% csrf_token %}
+                    <!-- Campo oculto para el parámetro next -->
+                    <!-- <input type="hidden" name="next" value="{{ request.GET.next }}"> -->
+                    
                     <div class="pb-2 pt-4">
                         <input type="text" name="cuit" id="cuit" placeholder="Ingrese su cuit" class="block w-full p-4 text-lg rounded-sm bg-black">
                     </div>
                     <div class="pb-2 pt-4">
                         <input class="block w-full p-4 text-lg rounded-sm bg-black" type="password" name="password" id="password" placeholder="Ingrese su contraseña">
                     </div>
-
                     <div class="px-4 pb-2 pt-4">
-                        <button type="submit"  class="uppercase block w-full p-4 text-lg rounded-full bg-indigo-500 hover:bg-indigo-600 focus:outline-none">Ingresar</button>
+                        <button type="submit" class="uppercase block w-full p-4 text-lg rounded-full bg-indigo-500 hover:bg-indigo-600 focus:outline-none">Ingresar</button>
                     </div>
                 </form>
             </div>
@@ -62,13 +64,14 @@
     const cuit = document.querySelector('#cuit')
     const password = document.querySelector('#password')
     function validarEntrada(e) {
-        e.preventDefault()
-        if(cuit.value === '' || password.value === '') {
-            divAlerta('Ingrese correctamente los campos')
-        } else {
-            window.location.href = '/home'
+        if (cuit.value === '' || password.value === '') {
+            e.preventDefault();  // Evita que el formulario se envíe
+            divAlerta('Ingrese correctamente los campos');
         }
+        // Si los campos están llenos, el formulario se enviará automáticamente
     }
+
+    form.addEventListener('submit', validarEntrada);
     function divAlerta(mensaje) {
 
         const alertaExistente = document.querySelector('.alerta-error')
@@ -89,7 +92,6 @@
 
     }
 
-    form.addEventListener('submit', validarEntrada)
 </script>
 
 </html>

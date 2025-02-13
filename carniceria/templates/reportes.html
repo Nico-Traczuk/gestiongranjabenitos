@@ -1,42 +1,58 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Esto es reporte de ventas va a tener un input de que dia a que dia y un buscar.</h1>
-    <div class="flex gap-5 mt-10">
-        <input class=" px-6 py-2 rounded shadow-xl border-2" type="date"/>
-        <input class=" px-6 py-2 rounded shadow-xl border-2" type="date"/>
-        <button class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit ">Buscar</button>
-    </div>
+    <h1 class="text-center text-2xl font-bold mb-4">Reporte de ventas</h1>
+    <form method="GET" action="">
+        <div class="flex gap-5 mt-5">
+            <input class="px-6 py-2 rounded shadow-xl border-2" type="date" name="fecha_inicio" required/>
+            <input class="px-6 py-2 rounded shadow-xl border-2" type="date" name="fecha_fin" required/>
+            <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit">Buscar</button>
+        </div>
+    </form>
 
     <div>
-        <table>
-            <table class="w-full border-2 mt-10 shadow-2xl text-center "> <!--ESTA TABLA HAY QUE ITERAR EL STOCK DE LA BASE-->
-                <thead class="bg-gray-800 text-white">  <!-- ITERAMOS CON EL FOR DE DJANGO -->
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Venta </th>
-                      <th>Tipo de venta</th>
-                      <th>Monto total</th>
-                    </tr>
-                </thead>
-                    <tbody class="border-4">
-                        <tr class="border-2 font-bold hover:bg-zinc-300 ">
-                            <td>Dato 1</td>
-                            <td>Dato 2</td>
-                            <td>Dato 2</td>
-                            <td>Dato 3</td>
-                        </tr>
-                        <tr class="border-2 font-bold hover:bg-zinc-300">
-                            <td>Otro dato 1</td>
-                            <td>Otro dato 2</td>
-                            <td>Otro dato 2</td>
-
-                            <td>Otro dato 3</td>
-                        </tr>
-                  </tbody>
-            </table>
-
+        {% if ventas_filtradas %}
+        <table class="mt-10 w-full border-collapse border border-gray-400">
+            <thead>
+                <tr class=" bg-gray-800 text-white">
+                    <th class="border border-gray-400  py-2">Artículo</th>
+                    <th class="border border-gray-400  py-2">Peso Vendido</th>
+                    <th class="border border-gray-400  py-2">Peso total vendido</th>
+                    <th class="border border-gray-400  py-2">Total Vendido</th>
+                    <th class="border border-gray-400  py-2">Fecha venta</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta in ventas_filtradas %}
+                <tr class="transition duration-200 hover:bg-slate-400">
+                    <td class="border border-gray-400 px-4 py-2">{{ venta.id_articulo.descripcion }}</td>
+                    <td class="border border-gray-400 px-4 py-2">{{ venta.id_detalle.cantidad }} kg</td>
+                    <td class="border border-gray-400 px-4 py-2"> {{venta.peso}} kg </td>
+                    <td class="border border-gray-400 px-4 py-2">$ {{ venta.id_detalle.total_formateado}}</td>
+                    <td class="border border-gray-400 px-4 py-2">{{ venta.id_cabecera.fecha_venta }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
+        <!-- Controles de paginación -->
+        <div class="mt-4 flex justify-center">
+            {% if ventas_filtradas.has_previous %}
+                <a href="?page=1" class="px-4 py-2 bg-gray-300 text-black rounded">Primero</a>
+                <a href="?page={{ ventas_filtradas.previous_page_number }}" class="px-4 py-2 bg-gray-300 text-black rounded">Anterior</a>
+            {% endif %}
+
+            <span class="px-3 py-2 bg-indigo-600 border border-gray-300 text-sm font-medium text-white">
+                Página {{ ventas_filtradas.number }} de {{ ventas_filtradas.paginator.num_pages }}
+            </span>
+
+            {% if ventas_filtradas.has_next %}
+                <a href="?page={{ ventas_filtradas.next_page_number }}" class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">Siguiente</a>
+                <a href="?page={{ ventas_filtradas.paginator.num_pages }}" class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">Último</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <p class="mt-10">No hay ventas para el rango de fechas seleccionado.</p>
+    {% endif %}
 
     </div>
 {% endblock content %}

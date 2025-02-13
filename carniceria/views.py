@@ -1,33 +1,40 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.decorators.http import require_http_methods 
+from django.contrib.auth.decorators import login_required
+from users.decorators import user_type_required
 from django.http import JsonResponse
-from django.db.models import Q
-import json
+from django.db.models import Q, Sum
+from django.db import connection, DatabaseError
 from .templates import *
 from .models import *
 from .forms import stockCompuestoForm, productosForm, gastosForm
 from datetime import datetime, timedelta
+
+
 @require_http_methods(["GET", "POST", "PUT", "DELETE"])
 #-----------------------------------------------------------------------------
+
+@login_required
+@user_type_required(1)
 def Viewhome(request):
+    #HARDCODE LAS VARIABLES DE SESION (ID SUC, ID EMPRESA, ID USUARIO, ID TIPO USUARIO) ESTO SE LLENA EN EL LOGIN
+    # request.session['id_sucursal'] = 1
+    # request.session['id_empresa'] = 1
+    # request.session['id_usuario'] = 1
+    # request.session['id_tipo_usuario'] = 1
 
-	#HARDCODE LAS VARIABLES DE SESION (ID SUC, ID EMPRESA, ID USUARIO, ID TIPO USUARIO)
-	request.session['id_sucursal'] = 1
-	request.session['id_empresa'] = 1
-	request.session['id_usuario'] = 1
-	request.session['id_tipo_usuario'] = 1
-	
-	date = datetime.now().date
-
-
-	return render(request, 'home.html', context={ 'date': date})
-
-
+    date = datetime.now().date
+    totalVentas = ventas_cabecera.objects.aggregate(total_general=Sum('total_general'))['total_general']
+    kilos_vendidos = ventas_detalle.objects.aggregate(total_kilos=Sum('cantidad'))['total_kilos']
+    kilos = int(kilos_vendidos)
+    gramos = int((kilos_vendidos - kilos) * 1000)
+    kilos_vendidos_formateado = f"{kilos} kg {gramos} g"
+    return render(request, 'home.html', {'date': date,  'totalVentas': totalVentas, 'kilos_vendidos_formateado': kilos_vendidos_formateado})
 
 
 #-----------------------------------------------------------------------------
-	"""    
+"""    
 
 	MODALES
 
@@ -69,7 +76,7 @@ def Viewhome(request):
 	
 
 
-	"""
+"""
 		elif 'agregar_producto_padre' in request.POST:
 			form_padre = stockCompuestoForm(request.POST)
 			if form_padre.is_valid():
@@ -119,47 +126,63 @@ def Viewhome(request):
 #                return redirect('stock')
 
 #-----------------------------------------------------------------------------
+@login_required
+@user_type_required(1,2)
 def Viewventas(request):
-	search_query = request.GET.get('search', '')
-	
-	# Filter products based on search query with correct field names
-	if search_query:
-		productos = articulos.objects.filter(
-			Q(descripcion__icontains=search_query) |
-			Q(codigo_articulo__icontains=search_query)  # Changed from codigo to codigo_articulo
-		)
-	else:
-		productos = articulos.objects.all()
-	
-	# Pagination
-	items_per_page = 10
-	paginator = Paginator(productos, items_per_page)
-	page = request.GET.get('page', 1)
-	
-	try:
-		productos_paginados = paginator.page(page)
-	except PageNotAnInteger:
-		productos_paginados = paginator.page(1)
-	except EmptyPage:
-		productos_paginados = paginator.page(paginator.num_pages)
-	
-	return render(request, 'ventas.html', {
-		'productos': productos_paginados,
-		'search_query': search_query,
-	})
+    search_query = request.GET.get('search', '')
+    
+    # Filter products based on search query with correct field names
+    if search_query:
+        productos = articulos.objects.filter(
+            Q(descripcion__icontains=search_query) |
+            Q(codigo_articulo__icontains=search_query)  # Changed from codigo to codigo_articulo
+        )
+    else:
+        productos = articulos.objects.all()
+    
+    return render(request, 'ventas.html', {
+        'productos': productos,
+        'search_query': search_query,
+    })
 
 #-----------------------------------------------------------------------------
+@login_required
+@user_type_required(1)
 def Viewreportes(request):
-	productos = articulos.objects.all()
-	#de acuerdo al usuario se tiene que renderizar la vista
-	# id_tipo_usuario = request.session.get('id_tipo_usuario') 
-	# #si 1 = administrador mostramos los reportes
-	# if id_tipo_usuario == 1: 
-	#     return render(request, 'reportes.html', context={'productos': productos})
-	# else:
-	return render(request, 'reportes.html', context={'productos': productos})
+    ventas = venta_stock_compuesto.objects.all().order_by('-id_cabecera__fecha_venta')
+    
+    fecha_inicio = None
+    fecha_fin = None
+
+    if request.method == 'GET' and 'fecha_inicio' in request.GET and 'fecha_fin' in request.GET:
+        fecha_inicio = request.GET.get('fecha_inicio')
+        fecha_fin = request.GET.get('fecha_fin')
+
+        # Convertir a objetos datetime
+        fecha_inicio = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+        fecha_fin = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)  
+
+        # Filtrar ventas por fecha
+        ventas = ventas.filter(id_cabecera__fecha_venta__range=(fecha_inicio, fecha_fin))
+
+    # Formatear el total de cada venta
+    for venta in ventas:
+        venta.id_detalle.total_formateado = "{:,.2f}".format(venta.id_detalle.total).replace(",", "X").replace(".", ",").replace("X", ".")
+
+    # Paginación
+    paginator = Paginator(ventas, 10)  # Muestra 10 ventas por página
+    page_number = request.GET.get('page')  # Obtiene el número de página de la URL
+    ventas_paginadas = paginator.get_page(page_number)
+
+    return render(request, 'reportes.html', {
+        'ventas_filtradas': ventas_paginadas,  # Se usa el objeto paginado
+        'fecha_inicio': fecha_inicio.date() if fecha_inicio else None,
+        'fecha_fin': fecha_fin.date() if fecha_fin else None
+    })
 
 #-----------------------------------------------------------------------------
+@login_required
+@user_type_required(1)
 def ViewStockProducto(request):
     # Obtener datos de la sesión
     id_sucursal = request.session.get('id_sucursal')
@@ -232,6 +255,8 @@ def ViewStockProducto(request):
     return render(request, 'stockProductos.html', context)
 
 #-----------------------------------------------------------------------------
+@login_required
+@user_type_required(1)
 def ViewStockCompuesto(request):
     # Obtener datos de la sesión
     id_sucursal = request.session.get('id_sucursal')
@@ -294,193 +319,139 @@ def ViewStockCompuesto(request):
     return render(request, 'stockCompuestos.html', context)
 
 #-----------------------------------------------------------------------------
-
+@login_required
+@user_type_required(1)
 def ViewCostos(request):
-    
-    costos_form = gastosForm()
-    
-    
-    context = {
-        'costos_form': costos_form
-    }
+    if request.method == "POST":
+        costos_form = gastosForm(request.POST)  # Recibir datos del formulario
+        if costos_form.is_valid():
+            costos_form.save()  # Guardar en la base de datos
+            return redirect("costos")  # Redirigir para limpiar el formulario
 
-    return render(request, 'costos.html', context)
+    else:
+        costos_form = gastosForm()  # Mostrar formulario vacío en una petición GET
+
+    context = {
+        "costos_form": costos_form
+    }
+    return render(request, "costos.html", context)
 
 #-----------------------------------------------------------------------------
 
+@login_required
+@user_type_required(1)
+def ViewCostosTabla(request):
+    costos_list = gastos.objects.all()  # Obtener todos los costos
 
-def ViewCostosTabla (request):
-    
-    return render(request, 'costosTabla.html')
+    # Formatear los montos
+    for costo in costos_list:
+        costo.monto_formateado = "{:,.2f}".format(costo.monto).replace(",", "X").replace(".", ",").replace("X", ".")
 
+    # Configurar la paginación (10 registros por página)
+    paginator = Paginator(costos_list, 10)  
+    page_number = request.GET.get("page")  # Obtener el número de página de la URL
+    costos = paginator.get_page(page_number)  # Obtener los datos de la página actual
+
+    context = {
+        "costos": costos
+    }
+    return render(request, "costosTabla.html", context)
 
 #-----------------------------------------------------------------------------
 
 
 # Vista para procesar la venta
+@login_required
+@user_type_required(1,2)
 def procesar_venta(request):
-    if request.method == 'POST':
-        try:
-            # Parsear los datos recibidos desde el frontend
-            data = json.loads(request.body)
-            
-            # Obtener los datos de la cabecera de la venta
-            id_empresa = data.get('id_empresa')
-            id_sucursal = data.get('id_sucursal')
-            id_medio_pago = data.get('id_medio_pago')
-            total_general = data.get('total')
-            detalles = data.get('detalles')
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
-            # Crear la cabecera de la venta
-            cabecera = ventas_cabecera.objects.create(
-                id_empresa_id=id_empresa,
-                id_sucursal_id=id_sucursal,
-                id_medio_pago_id=id_medio_pago,
-                fecha_venta=datetime.now(),  # Fecha y hora actual
-                total_general=total_general,
+    try:
+        print("\n🔹 RECIBIENDO SOLICITUD DE VENTA 🔹")
+        print(f"🔍 Datos crudos recibidos en request.POST: {request.POST}")
+
+        # Extraer datos de la cabecera
+        id_medio_pago = request.POST.get('id_medio_pago')
+        total = request.POST.get('total')
+
+        if not id_medio_pago or not total:
+            print("❌ Error: Datos incompletos en la cabecera de la venta")
+            return JsonResponse({'status': 'error', 'message': 'Faltan datos de la cabecera'}, status=400)
+
+        # Crear cabecera de la venta
+        cabecera = ventas_cabecera.objects.create(
+            id_empresa_id = 1,  # Ajustar según el usuario logueado
+            id_sucursal_id = request.session['id_sucursal'],  # Ajustar según la sucursal del usuario
+            id_medio_pago_id = int(id_medio_pago),
+            fecha_venta = datetime.now(),
+            total_general = float(total)
+        )
+
+        id_cabecera = cabecera.id_cabecera  # Obtener el ID recién creado
+        print(f"✅ Cabecera creada con ID: {id_cabecera}")
+
+        # Procesar los detalles de la venta
+        detalles = []
+        ids_articulos = request.POST.getlist("detalles_id_articulo[]")
+        cantidades = request.POST.getlist("detalles_cantidad[]")
+        precios_unitarios = request.POST.getlist("detalles_precio_unitario[]")
+        totales = request.POST.getlist("detalles_total[]")
+
+        if not (ids_articulos and cantidades and precios_unitarios and totales):
+            print("❌ Error: Datos incompletos en los detalles de la venta")
+            return JsonResponse({'status': 'error', 'message': 'Datos de detalle incompletos'}, status=400)
+
+        for i in range(len(ids_articulos)):
+            detalle = {
+                "id_articulo": int(ids_articulos[i]),
+                "cantidad": float(cantidades[i]),
+                "precio_unitario": float(precios_unitarios[i]),
+                "total": float(totales[i])
+            }
+            detalles.append(detalle)
+            print(f"🛒 Detalle {i+1}: {detalle}")
+
+        # Guardar los detalles en la base de datos
+        for detalle in detalles:
+            ventas_detalle.objects.create(
+                id_cabecera=cabecera,
+                id_articulo_id=detalle["id_articulo"],
+                cantidad=detalle["cantidad"],
+                precio_unitario=detalle["precio_unitario"],
+                total=detalle["total"]
             )
 
-            # Crear los detalles de la venta
-            for detalle in detalles:
-                ventas_detalle.objects.create(
-                    id_cabecera=cabecera,
-                    id_articulo_id=detalle['id_articulo'],
-                    cantidad=detalle['cantidad'],
-                    precio_unitario=detalle['precio_unitario'],
-                    total=detalle['total'],
-                    id_medio_pago_id=id_medio_pago,  # Puedes cambiarlo si es diferente por detalle
-                )
+        print(f"✅ Venta con ID {id_cabecera} procesada correctamente.")
 
-            # Respuesta exitosa
-            return render (request, 'ventas.html')
+        # 🔹 **Ejecución del Stored Procedure**
+        try:
+            cursor = connection.cursor()
+            cursor.execute("EXEC sp_actualiza_stock %s", [id_cabecera])  
+            cursor.close()
+            print(f"✅ SP ejecutado con ID: {id_cabecera}")
 
-        except Exception as e:
-            # Manejo de errores
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        except DatabaseError as ex:
+            print(f"❌ Error al ejecutar SP: {ex}")
+            return JsonResponse({'status': 'error', 'message': f'Error al actualizar stock: {str(ex)}'}, status=500)
 
-    return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+        # Redirigir a la vista de ventas
+        return redirect('ventas')
 
-
-
-
-
+    except Exception as e:
+        print(f"❌ ERROR INTERNO: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': f'Error interno: {str(e)}'}, status=500)
 #-----------------------------------------------------------------------------------------
 
-# def Viewstock(request):
-# 	# Session variables initialization
-# 	id_sucursal = request.session.get('id_sucursal')
-# 	id_empresa = request.session.get('id_empresa')
-# 	id_usuario = request.session.get('id_usuario')
-# 	id_tipo_usuario = request.session.get('id_tipo_usuario')
-	
-# 	# Initialize forms as None
-# 	producto_form = None
-# 	compuesto_form = None
-	
-# 	print(request.method)
+        # ?? **query a la vista**
+        try:
+            #Podes agregar mas condiciones al WHERE segun los filtros
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM v_movimientos_stock_compuesto \
+                           WHERE id_empresa = %s ", [request.session['id_empresa']])  
+            result = cursor.fetchall()
+            cursor.close()            
 
-# 	if request.method == 'POST':
-# 		origen = request.POST.get('origen')
-# 		method = request.POST.get('method')
-# 		print(origen, method)
-		
-# 	#     if origen == 'ART':
-# 	#         producto_form = productosForm(request.POST)
-# 	#         if producto_form.is_valid():
-# 	#             producto_form.save()
-# 	#             return redirect('stock')
-# 	#     elif origen == 'COMP':
-# 	#         compuesto_form = stockCompuestoForm(request.POST)
-# 	#         if compuesto_form.is_valid():
-# 	#             compuesto_form.save()
-# 	#             return redirect('stock')
-# 	#     else:
-# 	#         print("ERROR: Invalid origen in POST")
-# 	#         return redirect('stock')
-	
-	
-			
-# 	elif request.method == 'DELETE':
-# 		origen = request.GET.get('origen')
-# 		method = request.GET.get('method')	#No hace falta evaluar esto ya que sabemos que es un DELETE con origen COMP/ART
-		
-# 		if origen == 'COMP':
-# 			print("BORRANDO COMPUESTO")
-# 		elif origen == 'ART':
-# 			print("BORRANDO ARTICULO")
-# 	#     # Django doesn't process PUT/DELETE body automatically
-# 	#     # We need to parse it manually if you're sending as PUT/DELETE
-# 	#     # Alternatively, you could use POST with a hidden _method field
-		
-# 	#     if request.method == 'DELETE':
-# 	#         origen = request.GET.get('origen')
-# 	#         try:
-# 	#             if origen == 'ART':
-# 	#                 id_art = request.GET.get('id_articulo')
-# 	#                 articulo = articulos.objects.get(id_articulo=id_art)
-# 	#                 articulo.delete()
-# 	#                 return JsonResponse({'status': 'success'})
-# 	#             elif origen == 'COMP':
-# 	#                 id_stock_comp = request.GET.get('id_stock_compuesto')
-# 	#                 stock_compuesto_obj = stock_compuesto.objects.get(
-# 	#                     id_stock_compuesto=id_stock_comp
-# 	#                 )
-# 	#                 stock_compuesto_obj.delete()
-# 	#                 return JsonResponse({'status': 'success'})
-# 	#         except (articulos.DoesNotExist, stock_compuesto.DoesNotExist):
-# 	#             return JsonResponse({'status': 'error'}, status=404)
-		
-# 	#     elif request.method == 'PUT':
-# 	#         origen = request.GET.get('origen', id)
-# 	#         try:
-# 	#             if origen == 'ART':
-# 	#                 id = request.GET.get('id_articulo')
-# 	#                 articulo = articulos.objects.get(id_articulo=id)
-# 	#                 form = productosForm(request.PUT, instance=articulo)
-# 	#                 if form.is_valid():
-# 	#                     form.save()
-# 	#                     return JsonResponse({'status': 'success'})
-# 	#             elif origen == 'COMP':
-# 	#                 id_stock_comp = request.GET.get('id_stock_compuesto')
-# 	#                 stock_compuesto_obj = stock_compuesto.objects.get(
-# 	#                     id_stock_compuesto=id_stock_comp
-# 	#                 )
-# 	#                 form = stockCompuestoForm(request.PUT, instance=stock_compuesto_obj)
-# 	#                 if form.is_valid():
-# 	#                     form.save()
-# 	#                     return JsonResponse({'status': 'success'})
-# 	#         except (articulos.DoesNotExist, stock_compuesto.DoesNotExist):
-# 	#             return JsonResponse({'status': 'error'}, status=404)
-	
-	
-# 	# Formularios
-# 	producto_form = productosForm()
-# 	compuesto_form = stockCompuestoForm()
-	
-# 	# GET a los productos para mostrarlos
-# 	productos = articulos.objects.all()  
-# 	productosCompuestos = stock_compuesto.objects.all()
-	
-# 	# Pagination 
-# 	paginator = Paginator(productos, 10)
-# 	page = request.GET.get('page')
-	
-# 	try:
-# 		productos_paginados = paginator.page(page)
-# 	except PageNotAnInteger:
-# 		productos_paginados = paginator.page(1)
-# 	except EmptyPage:
-# 		productos_paginados = paginator.page(paginator.num_pages)
-	
-# 	# Prepare context with all necessary data
-# 	context = {
-# 		'productos': productos_paginados,
-# 		'productosCompuestos': productosCompuestos,
-# 		'producto_form': producto_form,
-# 		'compuesto_form': compuesto_form,
-# 		'id_sucursal': id_sucursal,
-# 		'id_empresa': id_empresa,
-# 	}
-	
-# 	return render(request, 'stock.html', context)
-
+        except DatabaseError as ex:
+            print(f"? Error al ejecutar VISTA: {ex}")
+            return JsonResponse({'status': 'error', 'message': f'Error al actualizar stock: {str(ex)}'}, status=500)

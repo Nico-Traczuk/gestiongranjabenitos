@@ -2,29 +2,52 @@
 
 {% block content %}
 
-    <h1>Tabla de costos</h1>
+    <h1 class="text-center text-2xl font-bold">Tabla de costos</h1>
 
 
     <div class="container">
         <div>
-			<table class="w-full border-2 mt-10 shadow-2xl text-center ">
+			<table class="mt-4 w-full border-collapse border border-gray-400">
 				<thead>
-					<tr>
-						<th>Fecha</th>
-						<th>Concepto</th>
-						<th>Monto</th>
+					<tr class="bg-gray-800 text-white">
+						<th class="border border-gray-400 px-4 py-2">Fecha</th>
+						<th class="border border-gray-400 px-4 py-2">Descripción</th>
+						<th class="border border-gray-400 px-4 py-2">Monto</th>
+						<th class="border border-gray-400 px-4 py-2">Sucursal</th>
 					</tr>
 				</thead>
 				<tbody>
-					{% for gasto in gastos %}
+					{% for costo in costos %}
+						<tr class="transition duration-200 hover:bg-slate-400">
+							<td class="border border-gray-400 px-4 py-2">{{ costo.fecha_gasto }}</td>
+							<td class="border border-gray-400 px-4 py-2">{{ costo.descripcion }}</td>
+							<td class="border border-gray-400 px-4 py-2">$ {{ costo.monto_formateado }}</td>
+							<td class="border border-gray-400 px-4 py-2"> {{costo.id_sucursal.nombre_sucursal}} </td>
+						</tr>
+					{% empty %}
 						<tr>
-							<td>{{ gasto.fecha }}</td>
-							<td>{{ gasto.concepto }}</td>
-							<td>{{ gasto.monto }}</td>
+							<td colspan="3" class="border border-gray-400 px-4 py-2 text-center">No hay costos registrados</td>
 						</tr>
 					{% endfor %}
 				</tbody>
 			</table>
+
+			<!-- Controles de paginación -->
+			<div class="mt-4 flex justify-center space-x-2">
+				<nav class="inline-flex rounded-md shadow">
+				{% if costos.has_previous %}
+					<a href="?page=1" class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">Primera</a>
+					<a href="?page={{ costos.previous_page_number }}" class="px-3 py-1 bg-gray-200 rounded">Anterior</a>
+				{% endif %}
+
+				<span class="px-3 py-2 bg-indigo-600 border border-gray-300 text-sm font-medium text-white">Página {{ costos.number }} de {{ costos.paginator.num_pages }}</span>
+
+				{% if costos.has_next %}
+					<a href="?page={{ costos.next_page_number }}" class="px-3 py-1 bg-gray-200 rounded">Siguiente</a>
+					<a href="?page={{ costos.paginator.num_pages }}" class="px-3 py-1 bg-gray-200 rounded">Última</a>
+				{% endif %}
+				</nav>
+			</div>
 		</div>
 
     </div>

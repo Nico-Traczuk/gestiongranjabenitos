@@ -34,5 +34,5 @@ usuarios = [
 ]
 
 for usuario in usuarios:
-    create_user()
+    create_user(**usuario)
     

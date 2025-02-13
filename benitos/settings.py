@@ -75,8 +75,7 @@ STATICFILES_DIRS = [
     ('tailwind', 'https://cdn.tailwindcss.com'),
     BASE_DIR / 'static',
 ]
-# LOGIN_REDIRECT_URL = 'home'  # Página a la que se redirige después del inicio de sesión
-# LOGOUT_REDIRECT_URL = 'home'  # Página a la que se redirige después del cierre de sesión
+
 
 WSGI_APPLICATION = 'benitos.wsgi.application'
 
@@ -102,7 +101,7 @@ DATABASES = {
     }
 }
 
-
+AUTH_USER_MODEL = 'users.User'
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -145,3 +144,7 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGIN_URL = '/login'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
