@@ -38,17 +38,17 @@ def create_user(cuit, password, first_name, last_name, id_sucursal, id_empresa, 
         print(f"❌ Error inesperado: {e}")
 
 # Lista de usuarios a crear
-usuarios = [
-    {
-        'cuit': '20349458451',
-        'password': 'minombre1992',
-        'first_name': 'Nicolas',
-        'last_name': 'Traczuk',
-        'id_sucursal': 1,
-        'id_empresa': 1,
-        'id_tipo_usuario': 2
-    }
-]
+# usuarios = [
+#     {
+#         'cuit': '',
+#         'password': '',
+#         'first_name': '',
+#         'last_name': '',
+#         'id_sucursal': 1,
+#         'id_empresa': 1,
+#         'id_tipo_usuario': 2
+#     }
+# ]
 
 # Crear usuarios
 for usuario in usuarios:
