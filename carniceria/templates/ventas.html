@@ -185,6 +185,17 @@
             </form>
         </div>
     </div>
+<!--   MENSAJE ALERTA AL CREAR O BORRAR O ERROR  -->
+{% if messages %}
+    <div class="fixed top-5 right-5 z-50">
+        {% for message in messages %}
+            <div class="p-4 text-white text-center message-alert animate__animated animate__zoomIn rounded-lg shadow-lg mb-2
+                {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 
     
     
@@ -194,6 +205,16 @@
 
 
 <script>
+
+setTimeout(function() {
+        let messages = document.querySelectorAll(".message-alert");
+        messages.forEach(function(message) {
+            message.style.transition = "opacity 0.5s ease-out";
+            message.style.opacity = "0";
+            setTimeout(() => message.remove(), 500); // Elimina el div después de la animación
+        });
+    }, 3000);
+
 
 const efectivoInput = document.getElementById('efectivo');
 const transferenciaInput = document.getElementById('transferencia');
@@ -242,83 +263,6 @@ document.addEventListener('keydown', (event) => {
 
 /*-------------------------------------------------------------------------------*/    
 
-// function agregarProducto(id_articulo, pesoDecimal = null) {
-//     console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal);
-    
-//     const producto = productos.find(p => p.id_articulo === id_articulo);
-//     console.log(producto);
-    
-//     const listaProductos = document.getElementById('lista-productos');
-//     const productoHTML = document.createElement('li');
-
-//     // **Si no hay pesoDecimal, asignamos 1 por defecto**
-//     const cantidadInicial = pesoDecimal !== null ? pesoDecimal : 1;
-
-//     productoHTML.innerHTML = `
-//     <div id="producto${id_articulo}" class="flex flex-col bg-white rounded-lg py-2 px-6 gap-3 overflow-hidden shadow-xl">
-    
-//       <div class="flex justify-between items-center">
-//         <span>Producto: ${producto.descripcion}</span>
-//         <button class="bg-red-500 hover:bg-red-700 text-white font-bold rounded-full py-2 px-4 rounded" onclick="eliminarVenta('${id_articulo}')">X</button>
-//       </div>
-
-//       <div>
-//         <span>Codigo Articulo: ${producto.codigo_articulo}</span>
-//       </div>
-      
-//       <div class="flex gap-2">
-//         <label>Cantidad x KG:</label>
-//         <input class="px-4 rounded border-b-2 bg-transparent" id="cantidad${id_articulo}" type="number" min="0" step="0.1" value="${cantidadInicial}" />
-//       </div>
-
-//       <div class="flex gap-2">
-//         <label>Precio Venta:</label>
-//         <input class="px-4 rounded border-b-2 bg-transparent" id="precioVenta${id_articulo}" type="number" value="${producto.precio_venta}" />
-//       </div>
-
-//     </div>
-//   `;
-    
-//     listaProductos.appendChild(productoHTML);
-    
-//     const inputPrecioVenta = document.getElementById(`precioVenta${id_articulo}`);
-//     const inputCantidad = document.getElementById(`cantidad${id_articulo}`);
-    
-//     let totalParcialAnterior = 0;
-
-//     function calcularTotal() {
-//         const cantidad = parseFloat(inputCantidad.value);
-//         const precioVenta = parseFloat(inputPrecioVenta.value);
-//         let totalParcial = 0;
-
-//         if (!isNaN(precioVenta) && !isNaN(cantidad)) {
-//             totalParcial = cantidad * precioVenta;
-//         }
-
-//         totalVenta = 0;
-//         for (const id in preciosVentas) {
-//             const precio = preciosVentas[id];
-//             const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
-//             const cantidadValor = parseFloat(cantidadInput.value);
-//             if (!isNaN(cantidadValor)) {
-//                 totalVenta += cantidadValor * precio;
-//             }
-//         }
-
-//         updateTotalVentas(inputPrecioVenta.id, precioVenta);
-//         spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-//     }
-
-//     // **Ejecutar el cálculo al agregar el producto**
-//     calcularTotal();
-
-//     // **Agregar eventos para actualizar el cálculo si se cambia el valor**
-//     inputCantidad.addEventListener('change', calcularTotal);
-//     inputPrecioVenta.addEventListener('change', calcularTotal);
-
-//     productosSeleccionados.push(producto);
-//     preciosVentas[`precioVenta${id_articulo}`] = producto.precio_venta;
-// }
 
 function agregarProducto(id_articulo, pesoDecimal = null) {
     console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal);
@@ -476,28 +420,7 @@ function eliminarVenta(id_articulo) {
  
 /*-------------------------------------------------------------------------------*/    
  
-    // function updateTotalVentas(idInput, precioVenta) {
-    //     if (preciosVentas[idInput]) {
-    //         totalVenta -= preciosVentas[idInput];
-    //     }
-    //     if (!isNaN(precioVenta)) {
-    //         preciosVentas[idInput] = precioVenta;
-    //     } else {
-    //         preciosVentas[idInput] = 0;
-    //     }
-    //     totalVenta = 0;
-    //     for (const id in preciosVentas) {
-    //         const precio = preciosVentas[id];
-    //         const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
-    //         const cantidadValor = parseFloat(cantidadInput.value);
-    //         if (!isNaN(cantidadValor)) {
-    //             totalVenta += cantidadValor * precio;
-    //         }
-    //     }
-    //     spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-
-    // }
 
 /*-------------------------------------------------------------------------------*/    
  
@@ -559,12 +482,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 console.log(`${key}: ${value}`);
             }
 
-            alert(`Venta cerrada exitosamente. Total: $${totalVenta}`);
+            // alert(`Venta cerrada exitosamente. Total: $${totalVenta}`);
 
             filas.forEach(fila => fila.remove());
             document.getElementById("totalVenta").textContent = `$0.00`;
 
-            setTimeout(() => form.submit(), 500); // Pequeño delay para asegurar el envío correcto
+            setTimeout(() => form.submit(), 400); // Pequeño delay para asegurar el envío correcto
         } else {
             alert("Venta cancelada.");
         }

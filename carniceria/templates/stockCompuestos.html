@@ -17,7 +17,7 @@
                 <thead>
                     <tr class="bg-gray-700 text-white">
                         <th class="py-2">Producto</th>
-                        <th>Cantidad</th>
+
                         <th>Peso inicial</th>
                         <th>Peso vendido</th>
                         <th>Acciones</th>
@@ -27,9 +27,9 @@
                     {% for productoCompuesto in productosCompuestos %}
                     <tr class="transition border-b-2 duration-200 hover:bg-slate-400">
                         <td class="py-1 capitalize">{{ productoCompuesto.id_compuesto.descripcion }}</td>
-                        <td>{{ productoCompuesto.cantidad_ingresada }}</td>
+
                         <td>{{ productoCompuesto.peso_inicial }} Kg</td>
-                        <td>Aquí iría el peso vendido</td>
+                        <td>{{productoCompuesto.peso_vendido}} kg</td>
                         <td>
                             <!-- Botón para eliminar -->
                             <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
@@ -61,6 +61,17 @@
     {% include 'modalCompuesto.html'%}
 {% endblock %}
 
+<!--   MENSAJE ALERTA AL CREAR O BORRAR O ERROR  -->
+{% if messages %}
+    <div class="fixed top-5 right-5 z-50">
+        {% for message in messages %}
+            <div class="p-4 text-white text-center message-alert animate__animated animate__zoomIn rounded-lg shadow-lg mb-2
+                {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
 
 
 
@@ -99,7 +110,14 @@
 		modal.classList.remove('hidden');
 	}
 
-
+    setTimeout(function() {
+        let messages = document.querySelectorAll(".message-alert");
+        messages.forEach(function(message) {
+            message.style.transition = "opacity 0.5s ease-out";
+            message.style.opacity = "0";
+            setTimeout(() => message.remove(), 500); // Elimina el div después de la animación
+        });
+    }, 3000);
 
 </script>
 

@@ -5,9 +5,11 @@ from django.contrib.auth.decorators import login_required
 from users.decorators import user_type_required
 from django.http import JsonResponse
 from django.db.models import Q, Sum
+from django.contrib import messages
 from django.db import connection, DatabaseError
 from .templates import *
 from .models import *
+import locale
 from .forms import stockCompuestoForm, productosForm, gastosForm
 from datetime import datetime, timedelta
 
@@ -18,112 +20,21 @@ from datetime import datetime, timedelta
 @login_required
 @user_type_required(1)
 def Viewhome(request):
-    #HARDCODE LAS VARIABLES DE SESION (ID SUC, ID EMPRESA, ID USUARIO, ID TIPO USUARIO) ESTO SE LLENA EN EL LOGIN
-    # request.session['id_sucursal'] = 1
-    # request.session['id_empresa'] = 1
-    # request.session['id_usuario'] = 1
-    # request.session['id_tipo_usuario'] = 1
-
+    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
     date = datetime.now().date
-    totalVentas = ventas_cabecera.objects.aggregate(total_general=Sum('total_general'))['total_general']
-    kilos_vendidos = ventas_detalle.objects.aggregate(total_kilos=Sum('cantidad'))['total_kilos']
+    # Suma total general de las ventas
+    totalVentas = ventas_cabecera.objects.aggregate(total_general=Sum('total_general'))['total_general'] or 0
+    totalVentas_formateado = locale.format_string('%.2f', totalVentas, grouping=True)
+    # suma de kilos vendidos
+    kilos_vendidos = ventas_detalle.objects.aggregate(total_kilos=Sum('cantidad'))['total_kilos'] or 0
     kilos = int(kilos_vendidos)
     gramos = int((kilos_vendidos - kilos) * 1000)
+    #kilos vendidos seteados
     kilos_vendidos_formateado = f"{kilos} kg {gramos} g"
-    return render(request, 'home.html', {'date': date,  'totalVentas': totalVentas, 'kilos_vendidos_formateado': kilos_vendidos_formateado})
+    return render(request, 'home.html', {'date': date,  'totalVentas': totalVentas, 'kilos_vendidos_formateado': kilos_vendidos_formateado, 'totalVentas_formateado': totalVentas_formateado})
 
 
 #-----------------------------------------------------------------------------
-"""    
-
-	MODALES
-
-		NUEVO: agregar JS en el boton que modifique el METHOD a POST
-		BORRAR: agregar JS en el boton que modifique el METHOD a DELETE
-		MODIFICAR: agregar JS en el boton que modifique el METHOD a PUT
-
-		Haciendo eso, el boton OK del modal siemrpe actuar� como SUBMIT
-
-	NUEVO:
-		tomas el ID del compuesto (en el caso que lo haya definido) ESTE TE DEFINE SI VA A PERTENECER A UN COMPUESTO O NO
-		tomas todos los datos del articulo
-		validas
-		grabas el articulo
-		pedis el ID nuevo generado (objeto_art.id)
-
-		si el articulo tiene definido el ID de compuesto
-			tomas los datos para crear un registro en el modelo art_composicion
-			grabas
-
-		Si el tipo es admin
-			recorres todas las sucrusales de la empresa
-			y por cada sucursal
-			agregas el nuevo articulo
-		Si el tipo es operador y puede agregar articulos
-			tomas la sucursal del tipo
-			y agrega el articulo para esa sucursal 
-	"""
-
-#            producto_id = request.PUT.get('id_articulo')
-#            try:
-#                producto = articulos.objects.get(id_articulo=int(producto_id))
-#                form = productosForm(instance=producto)
-#                return redirect('stock')
-#            except articulos.DoesNotExist:
-#                return redirect('stock')
-
-
-	
-
-
-"""
-		elif 'agregar_producto_padre' in request.POST:
-			form_padre = stockCompuestoForm(request.POST)
-			if form_padre.is_valid():
-				form_padre.save()
-				return redirect('stock')
-		elif 'eliminar_producto' in request.POST:
-			producto_id = request.POST.get('id_articulo')
-			try:
-				producto = articulos.objects.get(id_articulo=int(producto_id))
-				producto.delete()
-				return redirect('stock')
-			except articulos.DoesNotExist:
-				return redirect('stock')
-		elif 'eliminar_stock_compuesto' in request.POST:
-			stock_compuesto_id = request.POST.get('eliminar_stock_compuesto')
-			try:
-				stock_compuesto_obj = stock_compuesto.objects.get(id_stock_compuesto=stock_compuesto_id)
-				stock_compuesto_obj.delete()
-				return redirect('stock')
-			except stock_compuesto.DoesNotExist:
-				return redirect('stock')
-		elif 'modificar_producto' in request.PUT:
-			print('modificar_producto', request.PUT)
-			producto_id = request.PUT.get('id_articulo')
-			try:
-				producto = articulos.objects.get(id_articulo=int(producto_id))
-				form = productosForm(instance=producto)
-				return redirect('stock')
-			except articulos.DoesNotExist:
-				return redirect('stock')
-		elif 'modificar_stock_compuesto' in request.PUT:
-			print('modificar_stock_compuesto', request.PUT)
-			stock_compuesto_id = request.PUT.get('modificar_stock_compuesto')
-			try:
-				stock_compuesto_obj = stock_compuesto.objects.get(id_stock_compuesto=int(stock_compuesto_id) )
-				form_padre = stockCompuestoForm(instance=stock_compuesto_obj)
-				return redirect('stock')
-			except stock_compuesto.DoesNotExist:
-				return redirect('stock')
-	"""
-#            producto_id = request.POST.get('id_articulo')
-#            try:
-#                producto = articulos.objects.get(id_articulo=int(producto_id))
-#                producto.delete()
-#                return redirect('stock')
-#            except articulos.DoesNotExist:
-#                return redirect('stock')
 
 #-----------------------------------------------------------------------------
 @login_required
@@ -192,46 +103,44 @@ def ViewStockProducto(request):
 
     # Formulario y consulta de productos
     producto_form = productosForm()
-    productos = articulos.objects.all()  # Filtrar por empresa y sucursal si es necesario
+    productos = articulos.objects.all()  
 
     if request.method == 'POST':
-        method = request.POST.get('_method')  # Para manejar PUT y DELETE desde formularios HTML
+        method = request.POST.get('_method')
 
-        if method == 'UPDATE':  # Actualizar un producto existente
+        if method == 'UPDATE':  
             try:
                 id_art = request.POST.get('id_articulo')
-                print(id_art, 'id del articulo')
                 articulo_obj = articulos.objects.get(id_articulo=id_art)
                 form = productosForm(request.POST, instance=articulo_obj)
                 if form.is_valid():
                     form.save()
-                    print("Producto actualizado correctamente.")
+                    messages.success(request, "✅ Producto actualizado correctamente.")
                 else:
-                    print("Error en el formulario de actualización.", form.errors)
+                    messages.error(request, "❌ Error en la actualización del producto.")
             except articulos.DoesNotExist:
-                print("Error: El producto no fue encontrado (UPDATE).")
+                messages.error(request, "❌ El producto no fue encontrado para actualizar.")
 
-        elif method == 'DELETE':  # Eliminar un producto existente
+        elif method == 'DELETE':  
             try:
                 id_articulo = request.POST.get('id_articulo')
                 articulo_obj = articulos.objects.get(id_articulo=id_articulo)
                 articulo_obj.delete()
-                print("Producto eliminado correctamente.")
+                messages.success(request, "✅ Producto eliminado correctamente.")
             except articulos.DoesNotExist:
-                print("Error: El producto no fue encontrado (DELETE).")
+                messages.error(request, "❌ El producto no fue encontrado para eliminar.")
 
-        else:  # Crear un nuevo producto
+        else:  
             producto_form = productosForm(request.POST)
             if producto_form.is_valid():
                 producto_form.save()
-                print("Producto creado correctamente.")
+                messages.success(request, "✅ Producto creado correctamente.")
             else:
-                print("Error en el formulario de creación.", producto_form.errors)
+                messages.error(request, "❌ Error al crear el producto.")
 
-        # Redirigir a la misma vista para evitar reenvíos del formulario
         return redirect('stockProducto')
 
-    # Paginación de productos
+    # Paginación
     paginator = Paginator(productos, 10)
     page = request.GET.get('page')
 
@@ -253,7 +162,6 @@ def ViewStockProducto(request):
     }
 
     return render(request, 'stockProductos.html', context)
-
 #-----------------------------------------------------------------------------
 @login_required
 @user_type_required(1)
@@ -268,43 +176,51 @@ def ViewStockCompuesto(request):
     compuesto_form = stockCompuestoForm()
     productosCompuestos = stock_compuesto.objects.all()
 
+    # Obtener el peso vendido por cada stock compuesto
+    stock_vendido = venta_stock_compuesto.objects.values('id_stock_compuesto').annotate(
+        peso_vendido=Sum('peso')
+    )
+
+    # Convertirlo en un diccionario {id_stock_compuesto: peso_vendido}
+    stock_vendido_dict = {item['id_stock_compuesto']: item['peso_vendido'] or 0 for item in stock_vendido}
+
+    # Agregar peso vendido a cada producto compuesto
+    for producto in productosCompuestos:
+        producto.peso_vendido = stock_vendido_dict.get(producto.id_stock_compuesto, 0)
+
     if request.method == 'POST':
         method = request.POST.get('_method')
-        print(f"Método recibido: {method}")  # Depuración: Verificar el método (CREATE, UPDATE, DELETE)
 
         if method == 'UPDATE':
             try:
                 id_stock_comp = request.POST.get('id_stock_compuesto')
-                print(f"ID de stock compuesto para actualizar: {id_stock_comp}")  # Depuración: Verificar el ID
                 stock_compuesto_obj = stock_compuesto.objects.get(id_stock_compuesto=id_stock_comp)
                 form = stockCompuestoForm(request.POST, instance=stock_compuesto_obj)
                 if form.is_valid():
                     form.save()
-                    print("Producto compuesto actualizado correctamente.")  # Depuración: Confirmar actualización
+                    messages.success(request, "✅ Producto compuesto actualizado correctamente.")
                 else:
-                    print("Error en el formulario de actualización.")  # Depuración: Formulario no válido
+                    messages.error(request, "❌ Error al actualizar el producto compuesto.")
             except stock_compuesto.DoesNotExist:
-                print("Error: El registro no fue encontrado (UPDATE).")  # Depuración: Registro no existe
+                messages.error(request, "❌ El producto compuesto no fue encontrado para actualizar.")
 
         elif method == 'DELETE':
             try:
                 id_stock_compuesto = request.POST.get('id_stock_compuesto')
-                print(f"ID de stock compuesto para eliminar: {id_stock_compuesto}")  # Depuración: Verificar el ID
                 stock_compuesto_obj = stock_compuesto.objects.get(id_stock_compuesto=id_stock_compuesto)
                 stock_compuesto_obj.delete()
-                print("Producto compuesto eliminado correctamente.")  # Depuración: Confirmar eliminación
+                messages.success(request, "✅ Producto compuesto eliminado correctamente.")
             except stock_compuesto.DoesNotExist:
-                print("Error: El registro no fue encontrado (DELETE).")  # Depuración: Registro no existe
+                messages.error(request, "❌ El producto compuesto no fue encontrado para eliminar.")
 
         else:
             compuesto_form = stockCompuestoForm(request.POST)
             if compuesto_form.is_valid():
                 compuesto_form.save()
-                print("Producto compuesto creado correctamente.")  # Depuración: Confirmar creación
+                messages.success(request, "✅ Producto compuesto creado correctamente.")
             else:
-                print("Error en el formulario de creación.", compuesto_form.errors)  # Depuración: Formulario no válido
-		        
-        # Redirigir a la misma vista para evitar reenvíos del formulario
+                messages.error(request, "❌ Error al crear el producto compuesto.")
+
         return redirect('stockCompuesto')
 
     # Contexto para la plantilla
@@ -317,7 +233,6 @@ def ViewStockCompuesto(request):
         'id_tipo_usuario': id_tipo_usuario,
     }
     return render(request, 'stockCompuestos.html', context)
-
 #-----------------------------------------------------------------------------
 @login_required
 @user_type_required(1)
@@ -365,33 +280,31 @@ def ViewCostosTabla(request):
 @user_type_required(1,2)
 def procesar_venta(request):
     if request.method != 'POST':
+        messages.error(request, 'Método no permitido')
         return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
 
     try:
         print("\n🔹 RECIBIENDO SOLICITUD DE VENTA 🔹")
-        print(f"🔍 Datos crudos recibidos en request.POST: {request.POST}")
 
-        # Extraer datos de la cabecera
         id_medio_pago = request.POST.get('id_medio_pago')
         total = request.POST.get('total')
 
         if not id_medio_pago or not total:
-            print("❌ Error: Datos incompletos en la cabecera de la venta")
+            messages.error(request, 'Faltan datos de la cabecera')
             return JsonResponse({'status': 'error', 'message': 'Faltan datos de la cabecera'}, status=400)
 
         # Crear cabecera de la venta
         cabecera = ventas_cabecera.objects.create(
-            id_empresa_id = 1,  # Ajustar según el usuario logueado
-            id_sucursal_id = request.session['id_sucursal'],  # Ajustar según la sucursal del usuario
-            id_medio_pago_id = int(id_medio_pago),
-            fecha_venta = datetime.now(),
-            total_general = float(total)
+            id_empresa_id=1,
+            id_sucursal_id=1,
+            id_medio_pago_id=int(id_medio_pago),
+            fecha_venta=datetime.now(),
+            total_general=float(total)
         )
 
-        id_cabecera = cabecera.id_cabecera  # Obtener el ID recién creado
+        id_cabecera = cabecera.id_cabecera
         print(f"✅ Cabecera creada con ID: {id_cabecera}")
 
-        # Procesar los detalles de la venta
         detalles = []
         ids_articulos = request.POST.getlist("detalles_id_articulo[]")
         cantidades = request.POST.getlist("detalles_cantidad[]")
@@ -399,7 +312,7 @@ def procesar_venta(request):
         totales = request.POST.getlist("detalles_total[]")
 
         if not (ids_articulos and cantidades and precios_unitarios and totales):
-            print("❌ Error: Datos incompletos en los detalles de la venta")
+            messages.error(request, 'Datos de detalle incompletos')
             return JsonResponse({'status': 'error', 'message': 'Datos de detalle incompletos'}, status=400)
 
         for i in range(len(ids_articulos)):
@@ -410,7 +323,6 @@ def procesar_venta(request):
                 "total": float(totales[i])
             }
             detalles.append(detalle)
-            print(f"🛒 Detalle {i+1}: {detalle}")
 
         # Guardar los detalles en la base de datos
         for detalle in detalles:
@@ -427,19 +339,19 @@ def procesar_venta(request):
         # 🔹 **Ejecución del Stored Procedure**
         try:
             cursor = connection.cursor()
-            cursor.execute("EXEC sp_actualiza_stock %s", [id_cabecera])  
+            cursor.execute("EXEC sp_actualiza_stock %s", [id_cabecera])
             cursor.close()
             print(f"✅ SP ejecutado con ID: {id_cabecera}")
 
         except DatabaseError as ex:
-            print(f"❌ Error al ejecutar SP: {ex}")
+            messages.error(request, f'Error al actualizar stock: {str(ex)}')
             return JsonResponse({'status': 'error', 'message': f'Error al actualizar stock: {str(ex)}'}, status=500)
 
-        # Redirigir a la vista de ventas
+        messages.success(request, 'Venta procesada correctamente')
         return redirect('ventas')
 
     except Exception as e:
-        print(f"❌ ERROR INTERNO: {str(e)}")
+        messages.error(request, f'Error interno: {str(e)}')
         return JsonResponse({'status': 'error', 'message': f'Error interno: {str(e)}'}, status=500)
 #-----------------------------------------------------------------------------------------
 

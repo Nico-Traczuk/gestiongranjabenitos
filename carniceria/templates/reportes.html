@@ -27,7 +27,7 @@
                 <tr class="transition duration-200 hover:bg-slate-400">
                     <td class="border border-gray-400 px-4 py-2">{{ venta.id_articulo.descripcion }}</td>
                     <td class="border border-gray-400 px-4 py-2">{{ venta.id_detalle.cantidad }} kg</td>
-                    <td class="border border-gray-400 px-4 py-2"> {{venta.peso}} kg </td>
+                    <td class="border border-gray-400 px-4 py-2"> {{venta.peso}} kg {{venta.id_articulo.id_categoria}} </td>
                     <td class="border border-gray-400 px-4 py-2">$ {{ venta.id_detalle.total_formateado}}</td>
                     <td class="border border-gray-400 px-4 py-2">{{ venta.id_cabecera.fecha_venta }}</td>
                 </tr>
