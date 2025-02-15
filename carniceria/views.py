@@ -113,6 +113,13 @@ def ViewStockProducto(request):
                 id_art = request.POST.get('id_articulo')
                 articulo_obj = articulos.objects.get(id_articulo=id_art)
                 form = productosForm(request.POST, instance=articulo_obj)
+
+                # Validación para asegurarse de que el código de artículo no se repita
+                codigo_articulo = request.POST.get('codigo_articulo')  # Obtener el código de artículo
+                if articulos.objects.filter(codigo_articulo=codigo_articulo).exclude(id_articulo=id_art).exists():
+                    messages.error(request, "❌ El código de artículo ya está registrado. Por favor, use otro código.")
+                    return redirect('stockProducto')  # Redirigir para corregir el código
+
                 if form.is_valid():
                     form.save()
                     messages.success(request, "✅ Producto actualizado correctamente.")
@@ -130,8 +137,16 @@ def ViewStockProducto(request):
             except articulos.DoesNotExist:
                 messages.error(request, "❌ El producto no fue encontrado para eliminar.")
 
-        else:  
+        else:  # Crear nuevo producto
             producto_form = productosForm(request.POST)
+            
+            # Validar si el código de artículo ya existe
+            codigo_articulo = request.POST.get('codigo_articulo')  # Asumiendo que el campo es 'codigo_articulo'
+            if articulos.objects.filter(codigo_articulo=codigo_articulo).exists():
+                messages.error(request, "❌ El código de artículo ya está registrado. Por favor, use otro código.")
+                return redirect('stockProducto')  # Redirigir para que el usuario pueda corregir el código
+           
+            # Si no hay código repetido, proceder con el guardado
             if producto_form.is_valid():
                 producto_form.save()
                 messages.success(request, "✅ Producto creado correctamente.")
