@@ -40,9 +40,15 @@
                         />
                         <input id="cant_kilos" 
                                type="text" 
-                               placeholder="Kg" 
+                               placeholder="Ingrese la cantidad" 
                                class="border rounded-xl p-2"
-                               value="0.0"  
+                                
+                        />
+                        <input id="cant_valor" 
+                                type="text" 
+                                placeholder="Ingrese el valor" 
+                                class="border rounded-xl p-2"
+                                
                         />
                         <button id="agregarProducto" 
                                 class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium rounded-md w-fit ">
@@ -221,23 +227,7 @@ const transferenciaInput = document.getElementById('transferencia');
 const mercadoPagoInput = document.getElementById('mercadoPago');
 const inputProductos = document.getElementById('inputProductos');
 
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'F2' || event.key === 'F5' || event.key === 'F6' || event.key === 'F7' || event.key === 'F8' || event.key === 'F12') {
-    event.preventDefault(); // Cancela el evento por defecto
-    // Aquí puedes agregar el código para seleccionar el input de radio correspondiente
-    if(event.key === 'F2') {
-      inputProductos.focus();
-    } else if (event.key === 'F6') {
-      efectivoInput.checked = true;
-    } else if (event.key === 'F7') {
-      transferenciaInput.checked = true;
-    } else if (event.key === 'F8') {
-      mercadoPagoInput.checked = true;
-    } else if (event.key === 'F12') {
-      cerrarVenta();
-    }
-  }
-});
+
     /*Iteracion sobre productos para tener los datos de cada producto*/
     const productos = [
         {% for producto in productos %}
@@ -263,9 +253,8 @@ document.addEventListener('keydown', (event) => {
 
 /*-------------------------------------------------------------------------------*/    
 
-
-function agregarProducto(id_articulo, pesoDecimal = null) {
-    console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal);
+function agregarProducto(id_articulo, pesoDecimal = null, precioVenta = null) {
+    console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal, 'Precio:', precioVenta);
 
     const producto = productos.find(p => p.id_articulo === id_articulo);
     if (!producto) {
@@ -281,20 +270,24 @@ function agregarProducto(id_articulo, pesoDecimal = null) {
     }
 
     const cantidadInicial = pesoDecimal !== null ? pesoDecimal : 1;
+    const precioFinal = precioVenta !== null ? precioVenta : producto.precio_venta;
 
     let fila = document.createElement("tr");
     fila.id = `fila${id_articulo}`;
     fila.innerHTML = `
         <td>${producto.descripcion}</td>
         <td>
-            <input type="number" id="cantidad${id_articulo}" value="${cantidadInicial}" min="0" step="0.1" class="w-20 text-center" />
+            <input type="number" id="cantidad${id_articulo}" value="${cantidadInicial}" 
+                min="0" step="0.1" class="w-20 text-center" readonly />
         </td>
         <td>
-            <input type="number" id="precio${id_articulo}" value="${producto.precio_venta}" class="w-20 text-center" />
+            <input type="number" id="precio${id_articulo}" value="${precioFinal}" 
+                class="w-20 text-center" ${id_articulo === '9999' ? '' : 'readonly'} />
         </td>
-        <td id="subtotal${id_articulo}">$${(cantidadInicial * producto.precio_venta).toFixed(2)}</td>
+        <td id="subtotal${id_articulo}">$${(cantidadInicial * precioFinal).toLocaleString("es-AR", { style: "currency", currency: "ARS" })}</td>
         <td>
-            <button class="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded" onclick="eliminarProducto(${id_articulo})">X</button>
+            <button class="bg-red-500 hover:bg-red-700 text-white py-1 px-3 rounded" 
+                onclick="eliminarProducto(${id_articulo})">X</button>
         </td>
     `;
 
@@ -423,8 +416,11 @@ function eliminarVenta(id_articulo) {
 
 
 /*-------------------------------------------------------------------------------*/    
- 
+
+/* FUNCION PARA CERRAR VENTA, ES CON DOMCONTENTLOADED PARA QUE CARGE AL INICIO */
+
 document.addEventListener("DOMContentLoaded", function () {
+    // Manejador para el botón de cerrar venta
     document.getElementById("cerrarVentaBtn").addEventListener("click", function (event) {
         event.preventDefault(); // Evita la recarga de la página
 
@@ -492,6 +488,16 @@ document.addEventListener("DOMContentLoaded", function () {
             alert("Venta cancelada.");
         }
     });
+
+    // Escuchar la tecla F12
+    document.addEventListener("keydown", function (event) {
+        if (event.key === 'F12') {
+            event.preventDefault(); // Cancelar el comportamiento predeterminado de F12 (abrir herramientas)
+
+            // Simular el clic del botón de cerrar venta
+            document.getElementById("cerrarVentaBtn").click();
+        }
+    });
 });
 
 
@@ -525,15 +531,17 @@ function divAlerta(mensaje) {
 }
 
 /*-------------------------------------------------------------------------------*/    
-      /*   BUSCADOR DE PRODUCTOS     */
+      /*   BUSCADOR DE PRODUCTOS Y AGREGADO     */
     document.addEventListener('DOMContentLoaded', function() {
     const inputProductos = document.getElementById('inputProductos');
     const btnAgregar = document.getElementById('agregarProducto');
+    const cantKilosInput = document.getElementById('cant_kilos');
+    const cantValorInput = document.getElementById('cant_valor');
 
     console.log("Elemento inputProductos:", inputProductos);
     console.log("Elemento btnAgregar:", btnAgregar);
 
-    if (!inputProductos || !btnAgregar) {
+    if (!inputProductos || !btnAgregar || !cantKilosInput || !cantValorInput) {
         console.error("Uno o más elementos no fueron encontrados en el DOM.");
         return;
     }
@@ -585,21 +593,55 @@ function divAlerta(mensaje) {
             return;
         }
 
-        console.log('codigo articulo antes del cambio', inputProductos.value)
+        console.log('codigo articulo antes del cambio', inputProductos.value);
         inputProductos.value = codigoArticulo;
-        console.log('codigo articulo despues del cambio', inputProductos.value)
+        console.log('codigo articulo despues del cambio', inputProductos.value);
 
         // 🔥 **Buscar el producto en la base de datos por código de artículo*
         const productoEncontrado = productos.find(p => String(p.codigo_articulo).trim() === inputProductos.value.trim());
+        console.log(productoEncontrado);
 
-        console.log(productoEncontrado)
+        // Si se encuentra el producto
+        if (productoEncontrado) {
+        // Si el código de artículo es 9999, habilitar los campos y permitir que el usuario los rellene
+        if (codigoArticulo === '9999') {
+            const cantKilos = parseFloat(cantKilosInput.value);
+            const cantValor = parseFloat(cantValorInput.value);
 
-        agregarProducto(productoEncontrado.id_articulo, pesoDecimal);
+            // Verificar si los campos están vacíos o no tienen un valor válido
+            if (!cantKilos || !cantValor || isNaN(cantKilos) || isNaN(cantValor)) {
+                alert("Por favor, complete los campos de cantidad (kg) y valor antes de continuar.");
 
-        inputProductos.value = ''; // Limpiar el campo
+                return; // No agregar el producto si los campos no están completos o son inválidos
+            }
+
+            // Llamar a agregarProducto con los valores personalizados
+                agregarProducto(productoEncontrado.id_articulo, cantKilos, cantValor);
+            } else {
+                // Usar los datos de la base de datos para otros productos
+                agregarProducto(productoEncontrado.id_articulo, pesoDecimal, productoEncontrado.precio_venta);
+            }
+
+            // Limpiar el campo del código de producto después de agregarlo
+            inputProductos.value = '';
+        }
     }
 });
 
-
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'F2' || event.key === 'F5' || event.key === 'F6' || event.key === 'F7' || event.key === 'F8' || event.key === 'F12') {
+    event.preventDefault(); // Cancela el evento por defecto
+    // Aquí puedes agregar el código para seleccionar el input de radio correspondiente
+    if(event.key === 'F2') {
+      inputProductos.focus();
+    } else if (event.key === 'F6') {
+      efectivoInput.checked = true;
+    } else if (event.key === 'F7') {
+      transferenciaInput.checked = true;
+    } else if (event.key === 'F8') {
+      mercadoPagoInput.checked = true;
+    } 
+  }
+});
 </script>
 {% endblock content %}

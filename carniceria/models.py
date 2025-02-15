@@ -23,6 +23,7 @@ class sucursales (models.Model):
     telefono = models.CharField(max_length=40)
     email = models.EmailField(max_length=150)
     
+
     class Meta:
         db_table = "sucursales"
 

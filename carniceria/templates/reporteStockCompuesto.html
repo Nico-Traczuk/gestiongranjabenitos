@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+  
+
+    <h2 class="text-2xl font-bold mb-4">Reporte de Movimientos de Stock Compuesto</h2>
+
+    <table class="w-full border-2 mt-4 shadow-lg text-center">
+        <thead>
+            <tr class="bg-gray-700 text-white">
+
+                <th class="py-2 px-4">Prod. Compuesto</th>
+                <th class="py-2 px-4">Cantidad movida</th>
+                <th class="py-2 px-4">Art. Vendido</th>
+                <th class="py-2 px-4">Peso vendido</th>
+                <th class="py-2 px-4">Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for movimiento in movimientos %}
+            <tr class="border-b hover:bg-gray-200">
+
+                <td class="py-2 px-4">{{ movimiento.descripcion }}</td>
+                <td class="py-2 px-4">{{ movimiento.peso_vendido }}  Kg</td>
+                <td class="py-2 px-4">{{ movimiento.item_venta }}</td>
+                <td class="py-2 px-4">{{ movimiento.cantidad }}  Kg</td>
+                <td class="py-2 px-4">{{ movimiento.fecha_venta }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="py-4 text-gray-500">No hay movimientos registrados.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class=" inline-flex justify-center mt-4">
+        {% if movimientos.has_previous %}
+            <a href="?page=1" class="mx-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded">Primera</a>
+            <a href="?page={{ movimientos.previous_page_number }}" class="mx-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded">Anterior</a>
+        {% endif %}
+    
+        <span class="px-4 py-2 bg-gray-100 text-gray-700 rounded">
+            Página {{ movimientos.number }} de {{ movimientos.paginator.num_pages }}
+        </span>
+    
+        {% if movimientos.has_next %}
+            <a href="?page={{ movimientos.next_page_number }}" class="mx-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded">Siguiente</a>
+            <a href="?page={{ movimientos.paginator.num_pages }}" class="mx-2 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-black rounded">Última</a>
+        {% endif %}
+    </div>
+
+{% endblock content %}

@@ -34,6 +34,7 @@ urlpatterns = [
     path('ventas/', views.Viewventas, name='ventas'),
     path('ventas/procesar_venta/', views.procesar_venta, name='procesar_venta'),  # <-- Agregar esta línea
     path('reporte/', views.Viewreportes, name='reporte'),
+    path('reporteStockCompuesto/', views.ViewReporteCompuesto, name='reporteStockCompuesto'),
     path('stockCompuesto/', views.ViewStockCompuesto, name='stockCompuesto'),
     path('stockProducto/', views.ViewStockProducto, name='stockProducto'),
 ]

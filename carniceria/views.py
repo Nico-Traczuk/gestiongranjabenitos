@@ -354,16 +354,58 @@ def procesar_venta(request):
         messages.error(request, f'Error interno: {str(e)}')
         return JsonResponse({'status': 'error', 'message': f'Error interno: {str(e)}'}, status=500)
 #-----------------------------------------------------------------------------------------
+@login_required
+@user_type_required(1)
+def ViewReporteCompuesto(request):
+    id_empresa = 1
+
+    if not id_empresa:
+        return JsonResponse({'status': 'error', 'message': 'No se encontró una empresa en la sesión'}, status=400)
+
+    try:
+        # Ejecutar la consulta a la vista SQL
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT * FROM v_movimientos_stock_compuesto 
+            WHERE id_empresa = %s
+        """, [id_empresa])
+
+        columns = [col[0] for col in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        cursor.close()
+
+    except DatabaseError as ex:
+        print(f"❌ Error al ejecutar la consulta: {ex}")
+        return JsonResponse({'status': 'error', 'message': f'Error al obtener los datos: {str(ex)}'}, status=500)
+
+    # Paginación
+    page = request.GET.get('page', 1)  # Obtener el número de página de la URL
+    paginator = Paginator(results, 10)  # 10 registros por página
+
+    try:
+        movimientos_paginados = paginator.page(page)
+    except:
+        movimientos_paginados = paginator.page(1)  # Si hay error, carga la primera página
+
+    return render(request, 'reporteStockCompuesto.html', {
+        'movimientos': movimientos_paginados
+    })
+
+
+
+
+
+
 
         # ?? **query a la vista**
-        try:
-            #Podes agregar mas condiciones al WHERE segun los filtros
-            cursor = connection.cursor()
-            cursor.execute("SELECT * FROM v_movimientos_stock_compuesto \
-                           WHERE id_empresa = %s ", [request.session['id_empresa']])  
-            result = cursor.fetchall()
-            cursor.close()            
+        # try:
+        #     #Podes agregar mas condiciones al WHERE segun los filtros
+        #     cursor = connection.cursor()
+        #     cursor.execute("SELECT * FROM v_movimientos_stock_compuesto \
+        #                    WHERE id_empresa = %s ", [request.session['id_empresa']])  
+        #     result = cursor.fetchall()
+        #     cursor.close()            
 
-        except DatabaseError as ex:
-            print(f"? Error al ejecutar VISTA: {ex}")
-            return JsonResponse({'status': 'error', 'message': f'Error al actualizar stock: {str(ex)}'}, status=500)
+        # except DatabaseError as ex:
+        #     print(f"? Error al ejecutar VISTA: {ex}")
+        #     return JsonResponse({'status': 'error', 'message': f'Error al actualizar stock: {str(ex)}'}, status=500)
