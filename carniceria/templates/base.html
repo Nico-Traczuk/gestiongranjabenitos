@@ -518,81 +518,45 @@
             }
         }
     </script>
-    <script>
-        var chart = document.querySelector('#chartline')
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
         var options = {
             series: [{
-                name: 'SUCURSAL A',
-                type: 'line',
-                data: [1000, 55, 31, 47, 31, 43, 26, 41, 31, 47, 33]
-            }, {
-                name: 'SUCURSAL B',
-                type: 'line',
-                data: [55, 69, 45, 61, 43, 54, 37, 52, 44, 61, 43]
-            },
-            {
-                name: 'SUCURSAL C',
-                type: 'line',
-                data: [90, 95, 78, 64, 66, 87, 34, 51, 49, 55, 76]
-            },
-            {
-                name: 'SUCURSAL D',
-                type: 'line',
-                data: [20, 39, 76, 61, 19, 29, 85, 47, 55, 69, 41]
-            }
-            ],
+                name: 'Ventas Totales ($)',
+                data: {{ ventas_totales|safe }} 
+            }],
             chart: {
+                type: 'line',
                 height: 400,
                 width: '100%',
-                type: 'line',
-                zoom: {
-                    enabled: true
-                }
+                zoom: { enabled: true }
             },
-            stroke: {
-                curve: 'smooth'
+            stroke: { curve: 'smooth' },
+            xaxis: {
+                categories: {{ fechas|safe }}  // 🔹 Ahora son solo las fechas agrupadas
             },
-            fill: {
-                type: 'solid',
-                opacity: [0.50, 1],
+            yaxis: {
+                title: { text: 'Total de Ventas ($)' }
             },
-            labels: ['Ene ', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-            ],
-            markers: {
-                size: 1
-            },
-            yaxis: [{
-                    title: {
-                        text: 'Series A',
-                    },
-                },
-                {
-                    opposite: true,
-                    title: {
-                        text: 'Series B',
-                    },
-                },
-            ],
             tooltip: {
-                shared: true,
-                intersect: false,
                 y: {
-                    formatter: function(y) {
-                        if (typeof y !== "undefined") {
-                            return y.toFixed(0) + " Kilos";
-                        }
-                        return y;
+                    formatter: function(value) {
+                        return "$" + value.toLocaleString('es-AR');
                     }
                 }
             }
         };
-        var chart = new ApexCharts(chart, options);
+
+        var chart = new ApexCharts(document.querySelector("#chartline"), options);
         chart.render();
-    </script>
-    <script>
-        var chart = document.querySelector('#chartpie')
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var chart = document.querySelector('#chartpie');
+
         var options = {
-            series: [44, 55, 67, 83], // aca tengo que ver como sacar los porcentajes de venta de cada sucursal
+            series: {{ kilos_vendidos|safe }},  // 🔹 Carga los porcentajes de kilos vendidos
             chart: {
                 height: 350,
                 type: 'radialBar',
@@ -600,28 +564,25 @@
             plotOptions: {
                 radialBar: {
                     dataLabels: {
-                        name: {
-                            fontSize: '22px',
-                        },
-                        value: {
-                            fontSize: '16px',
-                        },
+                        name: { fontSize: '22px' },
+                        value: { fontSize: '16px' },
                         total: {
                             show: true,
-                            label: 'Venta Total',
-                            formatter: function(w) {
-                                // By default this function returns the average of all series. The below is just an example to show the use of custom formatter function
-                                return 1250 
+                            label: 'Kilos Totales',
+                            formatter: function() {
+                                return "{{ total_kilos_vendidos }} kg";  // 🔹 Muestra el total en el centro del gráfico
                             }
                         }
                     }
                 }
             },
-            labels: ['SUCURSAL A', 'SUCURSAL B', 'SUCURSAL C', 'SUCURSAL D'],
+            labels: {{ sucursales|safe }},  // 🔹 Nombres de sucursales
         };
+
         var chart = new ApexCharts(chart, options);
         chart.render();
-    </script>
+    });
+</script>
     <script>
         const menuItems = document.querySelectorAll('.menu-item');
     

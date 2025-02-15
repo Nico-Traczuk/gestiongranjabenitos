@@ -21,18 +21,37 @@ from datetime import datetime, timedelta
 @user_type_required(1)
 def Viewhome(request):
     locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
-    date = datetime.now().date
+    date = datetime.now().date()
+
     # Suma total general de las ventas
     totalVentas = ventas_cabecera.objects.aggregate(total_general=Sum('total_general'))['total_general'] or 0
     totalVentas_formateado = locale.format_string('%.2f', totalVentas, grouping=True)
-    # suma de kilos vendidos
+
+    # Suma de kilos vendidos
     kilos_vendidos = ventas_detalle.objects.aggregate(total_kilos=Sum('cantidad'))['total_kilos'] or 0
     kilos = int(kilos_vendidos)
     gramos = int((kilos_vendidos - kilos) * 1000)
-    #kilos vendidos seteados
     kilos_vendidos_formateado = f"{kilos} kg {gramos} g"
-    return render(request, 'home.html', {'date': date,  'totalVentas': totalVentas, 'kilos_vendidos_formateado': kilos_vendidos_formateado, 'totalVentas_formateado': totalVentas_formateado})
 
+    # 🔹 Agrupar ventas por fecha sumando el total del día
+    ventas_por_fecha = (
+        ventas_cabecera.objects
+        .values('fecha_venta__date')  # Extraemos solo la fecha sin la hora
+        .annotate(total=Sum('total_general'))  # Sumamos todas las ventas de ese día
+        .order_by('fecha_venta__date')
+    )
+
+    fechas = [venta['fecha_venta__date'].strftime('%d-%m-%Y') for venta in ventas_por_fecha]
+    ventas_totales = [venta['total'] for venta in ventas_por_fecha]
+
+    return render(request, 'home.html', {
+        'date': date,
+        'totalVentas': totalVentas,
+        'kilos_vendidos_formateado': kilos_vendidos_formateado,
+        'totalVentas_formateado': totalVentas_formateado,
+        'fechas': fechas,  # 🔹 Fechas agrupadas correctamente
+        'ventas_totales': ventas_totales  # 🔹 Total de ventas por fecha
+    })
 
 #-----------------------------------------------------------------------------
 
