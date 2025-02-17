@@ -114,6 +114,9 @@ def Viewreportes(request):
 @login_required
 @user_type_required(1)
 def ViewStockProducto(request):
+    
+    # Configurar la localización para Argentina
+    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
     # Obtener datos de la sesión
     id_sucursal = request.session.get('id_sucursal')
     id_empresa = request.session.get('id_empresa')
@@ -123,6 +126,11 @@ def ViewStockProducto(request):
     # Formulario y consulta de productos
     producto_form = productosForm()
     productos = articulos.objects.all()  
+
+    for producto in productos:
+    # Formateamos el precio con la configuración local de Argentina
+        producto.precio_venta_formateado = locale.currency(producto.precio_venta, grouping=True)
+
 
     if request.method == 'POST':
         method = request.POST.get('_method')

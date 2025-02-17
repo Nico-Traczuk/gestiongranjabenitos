@@ -31,7 +31,7 @@
                             <td class="capitalize">{{ producto.id_categoria.categoria }}</td>
                             <td class="py-1">{{ producto.codigo_articulo }}</td>
                             <td class="capitalize">{{ producto.id_unidad.tipo_unidad }}</td>
-                            <td>{{ producto.precio_venta }}</td>
+                            <td >{{ producto.precio_venta_formateado }}</td>
                             <td>
                                 <!-- Botón para eliminar -->
                                 <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
@@ -183,7 +183,13 @@ document.getElementById('cerrarModal').addEventListener('click', function () {
 
 
 
-
+document.addEventListener("DOMContentLoaded", function() {
+        let precioElement = document.getElementById('precioVenta');
+        if (precioElement) {
+            let precio = parseFloat(precioElement.textContent);  // Obtiene el precio como número
+            precioElement.textContent = precio.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });  // Formatea como moneda
+        }
+    });
 
 
 

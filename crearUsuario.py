@@ -42,11 +42,11 @@ def create_user(cuit, password, first_name, last_name, id_sucursal, id_empresa, 
 #     {
 #         'cuit': '',
 #         'password': '',
-#         'first_name': '',
-#         'last_name': '',
+#         'first_name': ' 1',
+#         'last_name': ' 1',
 #         'id_sucursal': 1,
 #         'id_empresa': 1,
-#         'id_tipo_usuario': 2
+#         'id_tipo_usuario': 1
 #     }
 # ]
 
