@@ -35,7 +35,7 @@ class stockCompuestoForm(forms.ModelForm):
         labels = {
             'id_compuesto': 'Descripcion',
 
-            'peso_inicial': 'Peso Inicial',
+            'peso_inicial': 'Peso Inicial (x KG )',
 
         }
         widgets = {

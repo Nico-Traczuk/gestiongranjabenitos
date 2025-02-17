@@ -197,6 +197,27 @@ def ViewStockProducto(request):
 
     return render(request, 'stockProductos.html', context)
 #-----------------------------------------------------------------------------
+
+def get_producto_data(request, id_articulo):
+    try:
+        articulo = articulos.objects.get(id_articulo=id_articulo)
+        data = {
+            'id_articulo': articulo.id_articulo,
+            'id_unidad': articulo.id_unidad.id_unidad if articulo.id_unidad else None,
+            'id_categoria': articulo.id_categoria.id_categoria if articulo.id_categoria else None,
+            'codigo_articulo': articulo.codigo_articulo,
+            'descripcion': articulo.descripcion,
+            'precio_venta': articulo.precio_venta,  
+        }
+        return JsonResponse(data)
+    except articulos.DoesNotExist:
+        return JsonResponse({'error': 'Producto no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+#-----------------------------------------------------------------------------
+
 @login_required
 @user_type_required(1)
 def ViewStockCompuesto(request):
@@ -267,6 +288,11 @@ def ViewStockCompuesto(request):
         'id_tipo_usuario': id_tipo_usuario,
     }
     return render(request, 'stockCompuestos.html', context)
+#-----------------------------------------------------------------------------
+
+def viewProductoRelacionados(request):
+    return render(request, 'productosRelacionados.html')
+
 #-----------------------------------------------------------------------------
 @login_required
 @user_type_required(1)

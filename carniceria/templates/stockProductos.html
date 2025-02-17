@@ -43,7 +43,7 @@
         
                                 <!-- Botón para modificar -->
                                 <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
-                                    onclick="openModifyProducto('{{ producto.id_articulo }}')">
+                                    onclick="openModifyProducto({{ producto.id_articulo }})">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                                     </svg>
@@ -127,22 +127,66 @@
     });
 
     function openModifyProducto(id_articulo) {
-        console.log('click en modificar', id_articulo);
-    
-        const modal = document.querySelector('#modalProducto');
-        const modalMethod = document.getElementById('modal_method');
-        const modalId = document.getElementById('modal_id_articulo');
-    
-        if (id_articulo) {
-            modalMethod.value = 'UPDATE';
-            modalId.value = id_articulo;
-        } else {
-            modalMethod.value = 'CREATE';
-            modalId.value = '';
-        }
-    
-        modal.classList.remove('hidden');
-    }
+    fetch(`/get_producto_data/${id_articulo}/`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Datos recibidos:", data);
+
+            let modal = document.getElementById('modalProducto');
+            if (!modal) {
+                console.error('Error: El modal no existe en el DOM.');
+                return;
+            }
+
+            // Verifica los IDs generados por Django en el formulario
+            let idArticuloInput = document.getElementById('modal_id_articulo');
+            let unidadSelect = document.getElementById('id_id_unidad');
+            let categoriaSelect = document.getElementById('id_id_categoria');
+            let codigoInput = document.getElementById('id_codigo_articulo');
+            let descripcionInput = document.getElementById('id_descripcion');
+            let precioVentaInput = document.getElementById('id_precio_venta');
+
+            // Debug: Mostrar qué campos no se encuentran
+            if (!idArticuloInput) console.error("❌ No se encontró: id_articulo");
+            if (!unidadSelect) console.error("❌ No se encontró: id_id_unidad");
+            if (!categoriaSelect) console.error("❌ No se encontró: id_id_categoria");
+            if (!codigoInput) console.error("❌ No se encontró: id_codigo_articulo");
+            if (!descripcionInput) console.error("❌ No se encontró: id_descripcion");
+            if (!precioVentaInput) console.error("❌ No se encontró: id_precio_venta");
+
+            // Asignar valores a los campos
+            if (idArticuloInput) idArticuloInput.value = data.id_articulo;
+            if (unidadSelect) unidadSelect.value = data.id_unidad;
+            if (categoriaSelect) categoriaSelect.value = data.id_categoria;
+            if (codigoInput) codigoInput.value = data.codigo_articulo;
+            if (descripcionInput) descripcionInput.value = data.descripcion;
+            if (precioVentaInput) precioVentaInput.value = parseFloat(data.precio_venta).toFixed(2);
+
+            // Cambiar _method a 'UPDATE' para la modificación
+            let methodInput = document.getElementById('modal_method');
+            if (methodInput) {
+                methodInput.value = 'UPDATE';  // Cambiar a UPDATE para que se haga un update en lugar de create
+            }
+
+            // Mostrar el modal
+            modal.classList.remove('hidden');
+        })
+        .catch(error => console.error('Error:', error));
+}
+
+
+// Cerrar el modal al hacer clic en el botón de cerrar
+document.getElementById('cerrarModal').addEventListener('click', function () {
+    document.getElementById('modalProducto').classList.add('hidden');
+});
+
+
+
+
+
+
+
+
     setTimeout(function() {
         let messages = document.querySelectorAll(".message-alert");
         messages.forEach(function(message) {

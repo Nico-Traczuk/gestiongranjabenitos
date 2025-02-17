@@ -37,4 +37,5 @@ urlpatterns = [
     path('reporteStockCompuesto/', views.ViewReporteCompuesto, name='reporteStockCompuesto'),
     path('stockCompuesto/', views.ViewStockCompuesto, name='stockCompuesto'),
     path('stockProducto/', views.ViewStockProducto, name='stockProducto'),
+    path('get_producto_data/<int:id_articulo>/', get_producto_data, name='get_producto_data'),
 ]
