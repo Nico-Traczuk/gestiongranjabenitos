@@ -20,9 +20,18 @@ from datetime import datetime, timedelta
 @login_required
 @user_type_required(1)
 def Viewhome(request):
+    id_user = request.session.get('id_user')
+    id_empresa = request.session.get('id_empresa')
+    id_sucursal = request.session.get('id_sucursal')
+    id_tipo_usuario = request.session.get('id_tipo_usuario')
+    
     locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
     date = datetime.now().date()
-
+    print('\n ✅ Home')
+    print('usuario: ', id_user)
+    print('empresa: ', id_empresa)
+    print('sucursal: ', id_sucursal)
+    print('tipo de usuario: ', id_tipo_usuario)
     # Suma total general de las ventas
     totalVentas = ventas_cabecera.objects.aggregate(total_general=Sum('total_general'))['total_general'] or 0
     totalVentas_formateado = locale.format_string('%.2f', totalVentas, grouping=True)
@@ -50,8 +59,10 @@ def Viewhome(request):
         'kilos_vendidos_formateado': kilos_vendidos_formateado,
         'totalVentas_formateado': totalVentas_formateado,
         'fechas': fechas,  # 🔹 Fechas agrupadas correctamente
-        'ventas_totales': ventas_totales  # 🔹 Total de ventas por fecha
+        'ventas_totales': ventas_totales,  # 🔹 Total de ventas por fecha
+
     })
+    
 
 #-----------------------------------------------------------------------------
 
@@ -60,21 +71,26 @@ def Viewhome(request):
 @user_type_required(1,2)
 def Viewventas(request):
     search_query = request.GET.get('search', '')
-    
-    # Filter products based on search query with correct field names
+    id_sucursal = request.session.get('id_sucursal')  # Obtener el id de la sucursal desde la sesión
+    print('\n ✅ Ventas')
+    print('estas en la sucursal: ', id_sucursal)
+    if not id_sucursal:
+        # Manejar el caso en el que no haya una sucursal en la sesión (redirigir o mostrar mensaje)
+        return render(request, 'ventas.html', {'error': 'No se ha seleccionado una sucursal.'})
+
+    # Filtrar productos por sucursal y búsqueda
+    productos = articulo_sucursal.objects.filter(id_sucursal=id_sucursal)
+
     if search_query:
-        productos = articulos.objects.filter(
-            Q(descripcion__icontains=search_query) |
-            Q(codigo_articulo__icontains=search_query)  # Changed from codigo to codigo_articulo
+        productos = productos.filter(
+            Q(id_articulo__descripcion__icontains=search_query) |
+            Q(id_articulo__codigo_articulo__icontains=search_query)
         )
-    else:
-        productos = articulos.objects.all()
-    
+
     return render(request, 'ventas.html', {
-        'productos': productos,
+        'productos': productos,  # Pasar los productos filtrados al template
         'search_query': search_query,
     })
-
 #-----------------------------------------------------------------------------
 @login_required
 @user_type_required(1)
@@ -113,24 +129,40 @@ def Viewreportes(request):
 #-----------------------------------------------------------------------------
 @login_required
 @user_type_required(1)
-def ViewStockProducto(request):
-    
-    # Configurar la localización para Argentina
-    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
-    # Obtener datos de la sesión
-    id_sucursal = request.session.get('id_sucursal')
-    id_empresa = request.session.get('id_empresa')
-    id_usuario = request.session.get('id_usuario')
-    id_tipo_usuario = request.session.get('id_tipo_usuario')
 
+def ViewStockProducto(request):
+#     """
+#     BUSCA EN GOOGLE POR: python django how to join two table -REST
+#     ENTRA A ESTA PAGINA: https://www.quora.com/How-do-I-join-tables-in-Django
+#     """
+    locale.setlocale(locale.LC_ALL, 'es_AR.UTF-8')
+    
     # Formulario y consulta de productos
     producto_form = productosForm()
-    productos = articulos.objects.all()  
 
-    for producto in productos:
+    # Obtener los productos de la base de datos
+    id_empresa = request.session.get('id_empresa')
+    sucursales_list = sucursales.objects.all()
+    sucursal_seleccionada = request.GET.get('sucursal', '0')  # Valor por defecto '0'
+    print(sucursal_seleccionada)
+
+    if sucursal_seleccionada and sucursal_seleccionada != '0':
+        print("✅ Se ha seleccionado una sucursal específica.")
+        
+        # Productos que ya están en la sucursal
+        articulo_sucursal_objs = articulo_sucursal.objects.filter(id_sucursal_id=sucursal_seleccionada)
+        
+        # Ordenar por codigo_articulo (asegurando que sea numérico)
+        productos_sucursal = articulo_sucursal_objs.order_by('id_articulo__codigo_articulo')
+        
+    else:
+        print("✅ No se ha seleccionado una sucursal específica.")
+        productos_sucursal = articulo_sucursal.objects.none()
+
+
+    for producto in productos_sucursal:
     # Formateamos el precio con la configuración local de Argentina
         producto.precio_venta_formateado = locale.currency(producto.precio_venta, grouping=True)
-
 
     if request.method == 'POST':
         method = request.POST.get('_method')
@@ -138,17 +170,24 @@ def ViewStockProducto(request):
         if method == 'UPDATE':  
             try:
                 id_art = request.POST.get('id_articulo')
-                articulo_obj = articulos.objects.get(id_articulo=id_art)
+                articulo_obj = articulo_sucursal.objects.get(id_articulo=id_art)
+                empresa_obj = articulo_empresa.objects.get(id_articulo=id_art)
+                
                 form = productosForm(request.POST, instance=articulo_obj)
-
                 # Validación para asegurarse de que el código de artículo no se repita
-                codigo_articulo = request.POST.get('codigo_articulo')  # Obtener el código de artículo
-                if articulos.objects.filter(codigo_articulo=codigo_articulo).exclude(id_articulo=id_art).exists():
-                    messages.error(request, "❌ El código de artículo ya está registrado. Por favor, use otro código.")
-                    return redirect('stockProducto')  # Redirigir para corregir el código
+                nuevo_codigo = request.POST.get('codigo_articulo')  # Código del form
+                if nuevo_codigo and nuevo_codigo != empresa_obj.id_articulo.codigo_articulo:
+                    # Actualizar código en la empresa (afecta a todas las sucursales)
+                    empresa_obj.id_articulo.codigo_articulo = nuevo_codigo
+                    empresa_obj.id_articulo.save()
 
-                if form.is_valid():
-                    form.save()
+                nuevo_precio = request.POST.get('precio_venta')
+                if nuevo_precio:
+                    articulo_obj.precio_venta = nuevo_precio
+                    articulo_obj.save()
+                # if form.is_valid():
+                #     form.save()
+                    print('codigo articulo: ', empresa_obj.id_articulo.codigo_articulo)
                     messages.success(request, "✅ Producto actualizado correctamente.")
                 else:
                     messages.error(request, "❌ Error en la actualización del producto.")
@@ -166,7 +205,7 @@ def ViewStockProducto(request):
 
         else:  # Crear nuevo producto
             producto_form = productosForm(request.POST)
-            
+
             # Validar si el código de artículo ya existe
             codigo_articulo = request.POST.get('codigo_articulo')  # Asumiendo que el campo es 'codigo_articulo'
             if articulos.objects.filter(codigo_articulo=codigo_articulo).exists():
@@ -175,37 +214,158 @@ def ViewStockProducto(request):
            
             # Si no hay código repetido, proceder con el guardado
             if producto_form.is_valid():
-                producto_form.save()
+                empresa_obj = empresa.objects.get(id_empresa=id_empresa)  # Instancia de empresa
+                nuevo_articulo = producto_form.save()
+                print("✅ Producto creado correctamente.")
+                print('producto de la empresa creado es: ', nuevo_articulo)
+               
+                id_articulo = nuevo_articulo.id_articulo
+                articulo_obj = articulos.objects.get(id_articulo=id_articulo)  # Instancia del artículo
+
+                if not id_empresa:
+                    messages.error(request, "❌ No se encontró la empresa en la sesión.")
+                    return redirect('stockProducto')
+
+                # Crear la relación en articulo_empresa
+                articulo_empresa.objects.create(
+                    id_empresa=empresa_obj,  # Pasamos la instancia, no el ID
+                    id_articulo=articulo_obj,  # Pasamos la instancia, no el ID
+                    codigo_articulo=nuevo_articulo.codigo_articulo,  # Se mantiene el mismo código
+                    precio_costo=nuevo_articulo.precio_costo,
+                    precio_venta=nuevo_articulo.precio_venta
+                )
+                print("✅ Relación articulo_empresa creada correctamente.")   
+                print("✅ Producto creado correctamente.")
+                print('Producto de la empresa creado es:', nuevo_articulo)
+                print('Datos enviados con POST:', request.POST)          
                 messages.success(request, "✅ Producto creado correctamente.")
             else:
                 messages.error(request, "❌ Error al crear el producto.")
 
         return redirect('stockProducto')
 
-    # Paginación
-    paginator = Paginator(productos, 10)
-    page = request.GET.get('page')
-
-    try:
-        productos_paginados = paginator.page(page)
-    except PageNotAnInteger:
-        productos_paginados = paginator.page(1)
-    except EmptyPage:
-        productos_paginados = paginator.page(paginator.num_pages)
-
     # Contexto para la plantilla
     context = {
-        'productos': productos_paginados,
+        # 'productos': productos_paginados,
         'producto_form': producto_form,
-        'id_sucursal': id_sucursal,
-        'id_empresa': id_empresa,
-        'id_usuario': id_usuario,
-        'id_tipo_usuario': id_tipo_usuario,
+        'productos_sucursal': productos_sucursal,
+        'sucursales': sucursales_list,
+        'sucursal_seleccionada': sucursal_seleccionada
     }
 
     return render(request, 'stockProductos.html', context)
 #-----------------------------------------------------------------------------
+@login_required
+@user_type_required(1)
+def ViewArticulosSucursal(request):
+    sucursales_list = sucursales.objects.all()
+    sucursal_seleccionada = request.GET.get('sucursal', '0')
 
+    print(f"\n🔹 Sucursal seleccionada: {sucursal_seleccionada}")
+
+    productos = []
+    empresa_list = articulo_empresa.objects.all()  # Mostrar todos los artículos por defecto
+
+    if sucursal_seleccionada and sucursal_seleccionada != '0':
+        print("✅ Se ha seleccionado una sucursal específica.")
+
+        # Obtener los productos ya en la sucursal
+        articulo_sucursal_objs = articulo_sucursal.objects.filter(id_sucursal_id=sucursal_seleccionada)
+        productos = sorted(
+            [obj.id_articulo for obj in articulo_sucursal_objs], 
+            key=lambda articulo: int(articulo.codigo_articulo)
+        )
+
+        # Obtener los artículos que NO están en la sucursal
+        articulos_asignados_ids = articulo_sucursal_objs.values_list('id_articulo', flat=True)
+        empresa_list = articulo_empresa.objects.exclude(id_articulo__in=articulos_asignados_ids)
+
+    # **IMPORTANTE:** Si `productos` está vacío, aseguramos que sea una lista vacía
+    if not productos:
+        productos = []
+
+    # **IMPORTANTE:** Si `empresa_list` está vacío, aseguramos que sea una lista vacía
+    if not empresa_list:
+        empresa_list = []
+
+    print(f"🔹 Productos en la sucursal ({sucursal_seleccionada}): {[p.descripcion for p in productos]}")
+    print(f"🔹 Artículos disponibles para agregar: {[e.id_articulo.descripcion for e in empresa_list]}")
+
+    context = {
+        'sucursales': sucursales_list,
+        'productos': productos,  # Siempre se enviará la lista, aunque esté vacía
+        'sucursal_seleccionada': sucursal_seleccionada,
+        'empresa_list': empresa_list  # Siempre se enviará la lista, aunque esté vacía
+    }
+
+    return render(request, 'articulosSucursal.html', context)
+
+#-----------------------------------------------------------------------------
+@login_required
+def agregar_articulo(request):
+    if request.method == "POST":
+        id_sucursal = request.POST.get("sucursal_id", "").strip()
+        articulos_a_agregar = request.POST.getlist("articulos_a_agregar")
+
+        print("ID Sucursal:", id_sucursal)
+        print("Artículos a agregar antes de limpiar:", articulos_a_agregar)
+
+        # Filtramos valores vacíos
+        articulos_a_agregar = [id for id in articulos_a_agregar if id.strip()]
+
+        print("Artículos a agregar después de limpiar:", articulos_a_agregar)
+
+        if id_sucursal and id_sucursal.isdigit() and articulos_a_agregar:
+            try:
+                sucursal = sucursales.objects.get(id_sucursal=id_sucursal)
+            except sucursales.DoesNotExist:
+                print("Error: La sucursal no existe.")
+                return redirect(f"/articulosSucursal?sucursal={id_sucursal}")
+
+            for id_articulo in articulos_a_agregar:
+                try:
+                    # Obtener el artículo desde `articulo_empresa`
+                    articulo_empresa_obj = articulo_empresa.objects.get(id_articulo=id_articulo)
+                    articulo = articulo_empresa_obj.id_articulo  # Extraer el objeto artículo real
+
+                    # Verificar si ya existe en la sucursal para evitar duplicados
+                    if not articulo_sucursal.objects.filter(id_articulo=articulo, id_sucursal=sucursal).exists():
+                        articulo_sucursal.objects.create(id_articulo=articulo, id_sucursal=sucursal)
+                except articulo_empresa.DoesNotExist:
+                    print(f"Error: El artículo con ID {id_articulo} no existe en articulo_empresa.")
+
+        return redirect(f"/articulosSucursal?sucursal={id_sucursal}")
+
+#-----------------------------------------------------------------------------
+@login_required
+def quitar_articulo(request):
+    if request.method == "POST":
+        id_sucursal = request.POST.get("sucursal_id", "").strip()
+        articulos_a_quitar = request.POST.getlist("articulos_a_quitar")
+
+        print("ID Sucursal:", id_sucursal)
+        print("Artículos a quitar antes de limpiar:", articulos_a_quitar)
+
+        # Filtramos valores vacíos
+        articulos_a_quitar = [id for id in articulos_a_quitar if id.strip()]
+
+        print("Artículos a quitar después de limpiar:", articulos_a_quitar)
+
+        if id_sucursal and id_sucursal.isdigit() and articulos_a_quitar:
+            try:
+                sucursal = sucursales.objects.get(id_sucursal=id_sucursal)
+            except sucursales.DoesNotExist:
+                print("Error: La sucursal no existe.")
+                return redirect(f"/articulosSucursal?sucursal={id_sucursal}")
+
+            # Eliminamos los artículos de la sucursal usando id_articulo
+            articulo_sucursal.objects.filter(
+                id_articulo__id_articulo__in=[int(id) for id in articulos_a_quitar],  
+                id_sucursal=sucursal
+            ).delete()
+
+        return redirect(f"/articulosSucursal?sucursal={id_sucursal}")
+#-----------------------------------------------------------------------------
 def get_producto_data(request, id_articulo):
     try:
         articulo = articulos.objects.get(id_articulo=id_articulo)
@@ -363,15 +523,16 @@ def procesar_venta(request):
 
         # Crear cabecera de la venta
         cabecera = ventas_cabecera.objects.create(
-            id_empresa_id=1,
-            id_sucursal_id=1,
+            id_empresa_id=request.session.get('id_empresa'),
+            id_sucursal_id=request.session.get('id_sucursal'),
             id_medio_pago_id=int(id_medio_pago),
             fecha_venta=datetime.now(),
             total_general=float(total)
         )
 
         id_cabecera = cabecera.id_cabecera
-        print(f"✅ Cabecera creada con ID: {id_cabecera}")
+        print(f"✅ Cabecera creada con ID: {id_cabecera} en la surucsal {request.session.get('id_sucursal')}")
+
 
         detalles = []
         ids_articulos = request.POST.getlist("detalles_id_articulo[]")
@@ -383,9 +544,25 @@ def procesar_venta(request):
             messages.error(request, 'Datos de detalle incompletos')
             return JsonResponse({'status': 'error', 'message': 'Datos de detalle incompletos'}, status=400)
 
+        # Obtener el id_sucursal desde la sesión
+        id_sucursal = request.session.get('id_sucursal')
+
+        # Filtramos los artículos de la sucursal
+        articulo_sucursal_objs = articulo_sucursal.objects.filter(id_sucursal_id=id_sucursal)
+
+        # Procesamos los detalles
         for i in range(len(ids_articulos)):
+            id_articulo = int(ids_articulos[i])
+
+            # Verificamos si el artículo pertenece a la sucursal
+            articulo_sucursal_obj = articulo_sucursal_objs.filter(id_articulo_id=id_articulo).first()
+
+            if not articulo_sucursal_obj:
+                messages.error(request, f"El artículo con ID {id_articulo} no pertenece a la sucursal seleccionada")
+                return JsonResponse({'status': 'error', 'message': f"El artículo con ID {id_articulo} no pertenece a la sucursal seleccionada"}, status=400)
+
             detalle = {
-                "id_articulo": int(ids_articulos[i]),
+                "id_articulo": id_articulo,
                 "cantidad": float(cantidades[i]),
                 "precio_unitario": float(precios_unitarios[i]),
                 "total": float(totales[i])
@@ -421,6 +598,7 @@ def procesar_venta(request):
     except Exception as e:
         messages.error(request, f'Error interno: {str(e)}')
         return JsonResponse({'status': 'error', 'message': f'Error interno: {str(e)}'}, status=500)
+
 #-----------------------------------------------------------------------------------------
 @login_required
 @user_type_required(1)

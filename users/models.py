@@ -22,10 +22,7 @@ class User(AbstractBaseUser):
     password = models.CharField(max_length=128)  # Almacenamos la contraseña encriptada
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
-    id_empresa = models.ForeignKey('carniceria.empresa', on_delete=models.CASCADE)
-    id_sucursal = models.ForeignKey('carniceria.sucursales', on_delete=models.CASCADE)
     id_tipo_usuario = models.IntegerField()  # ID como número
-
     is_active = models.BooleanField(default=True)  # Necesario para autenticación
 
     objects = UserManager()
@@ -35,3 +32,18 @@ class User(AbstractBaseUser):
 
     class Meta:
         db_table = "users"
+
+class usuario_empresa(models.Model):
+    id_user = models.ForeignKey('users.User', on_delete=models.CASCADE, db_column='id_user')
+    id_empresa = models.ForeignKey('carniceria.empresa', on_delete=models.CASCADE, db_column='id_empresa')
+    
+    class Meta:
+        db_table = "usuario_empresa"
+
+class usuario_sucursal(models.Model):
+    id_user = models.ForeignKey('users.User', on_delete=models.CASCADE, db_column='id_user')
+    id_empresa = models.ForeignKey('carniceria.empresa', on_delete=models.CASCADE, db_column='id_empresa')
+    id_sucursal = models.ForeignKey('carniceria.sucursales', on_delete=models.CASCADE, db_column='id_sucursal')
+    
+    class Meta:
+        db_table = "usuario_sucursal"

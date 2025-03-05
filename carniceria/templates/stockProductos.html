@@ -5,91 +5,81 @@
     <div>
         <form id="form-producto" action="{% url 'stockProducto' %}" method="POST">{% csrf_token %}
             <input type="hidden" id="id_prod_method" name="_method" value="POST">
-            <!-- Botón para agregar producto -->
             <button type="button" id="agregarProducto" class="transition duration-200 inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md w-fit "
                  >
                 Agregar Producto o Articulo
             </button>
-        
-            <!-- Tabla de productos -->
-            <div>
-                <table class="w-full border-2 mt-10 shadow-2xl text-center">
-                    <thead>
-                        <tr class="bg-gray-700 text-white">
-                            <th class="py-2">Descripción</th>
-                            <th>Categoría</th>
-                            <th>Codigo</th>
-                            <th>Tipo Unidad</th>
-                            <th>Precio KG</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for producto in productos %}
-                        <tr class="transition border-b-2 duration-200 hover:bg-slate-400">
-                            <td class="py-1">{{ producto.descripcion }}</td>                
-                            <td class="capitalize">{{ producto.id_categoria.categoria }}</td>
-                            <td class="py-1">{{ producto.codigo_articulo }}</td>
-                            <td class="capitalize">{{ producto.id_unidad.tipo_unidad }}</td>
-                            <td >{{ producto.precio_venta_formateado }}</td>
-                            <td>
-                                <!-- Botón para eliminar -->
-                                <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
-                                    onclick="document.getElementById('id_prod_method').value='DELETE'; document.getElementById('id_articulo').value='{{ producto.id_articulo }}';">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                </button>
-        
-                                <!-- Botón para modificar -->
-                                <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
-                                    onclick="openModifyProducto({{ producto.id_articulo }})">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                                    </svg>
-                                </button>
-                            </td>
-                        </tr>
+        </form>
+            <div class="flex items-center gap-4">
+                <label for="sucursal" class="font-bold text-sm">Seleccione la sucursal:</label>
+                <form action="{% url 'stockProducto' %}" method="GET" class="flex gap-5 my-2 flex-col md:flex-row">
+                    <select class="border px-4 py-2 rounded-md" name="sucursal" id="sucursal">
+                        <option class="border px-4 py-2" value="0" {% if request.GET.sucursal == '0' %}selected{% endif %}>------</option>
+                        {% for sucursal in sucursales %}
+                        <option class="border px-4 py-2" value="{{ sucursal.id_sucursal }}" {% if request.GET.sucursal == sucursal.id_sucursal|stringformat:"s" %}selected{% endif %}>
+                            {{ sucursal.nombre_sucursal }}
+                        </option>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </select>
+                    <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md">Buscar</button>
+                </form>
             </div>
-        
+            
+            {% if sucursal_seleccionada != '0' %}
+            <!-- Tabla de productos -->
+            <div class="container mx-auto">
+                <div class="overflow-x-auto">
+                    <table class="mt-4 w-full border-collapse border border-gray-400 text-sm sm:text-base">
+                        <thead>
+                            <tr class="bg-gray-700 text-white cursor-pointer">
+                                <th class="border border-gray-400 px-2 sm:px-4 py-2" data-order="asc">Descripción</th>
+                                <th class="border border-gray-400 px-2 sm:px-4 py-2" data-order="asc">Categoría</th>
+                                <th class="border border-gray-400 px-2 sm:px-4 py-2" data-order="asc">Codigo</th>
+                                <th class="border border-gray-400 px-2 sm:px-4 py-2">Tipo Unidad</th>
+                                <th class="border border-gray-400 px-2 sm:px-4 py-2">Precio Venta</th>
+                                <th class="border border-gray-400 px-2 sm:px-4 py-2">Modificar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for producto in productos_sucursal %}
+                            <tr class="transition border-b-2 duration-200 hover:bg-slate-400 hover:cursor-pointer">
+                                <td class="border border-gray-400 px-2 sm:px-4 py-1">{{ producto.id_articulo.descripcion }}</td>                
+                                <td class="capitalize border border-gray-400 px-2 sm:px-4 py-1">{{ producto.id_articulo.id_categoria.categoria }}</td>
+                                <td class="border border-gray-400 px-2 sm:px-4 py-1">{{ producto.id_articulo.codigo_articulo }}</td>
+                                <td class="capitalize border border-gray-400 px-2 sm:px-4 py-1">{{ producto.id_articulo.id_unidad.tipo_unidad }}</td>
+                                <td class="border border-gray-400 px-2 sm:px-4 py-1">{{ producto.precio_venta_formateado }}</td>
+                                <td class="border border-gray-400 px-2 sm:px-4 py-1">
+                                    <!-- Botón para eliminar -->
+                                    <!-- <button type="submit" class="inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-md"
+                                        onclick="document.getElementById('id_prod_method').value='DELETE'; document.getElementById('id_articulo').value='{{ producto.id_articulo.id_articulo }}';">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button> -->
+            
+                                    <!-- Botón para modificar -->
+                                    <button type="button" class="inline-flex items-center px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium rounded-md"
+                                    onclick="openModifyProducto({{ producto.id_articulo.id_articulo }})">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                            d="M15.232 5l3.536 3.536M9 11l5.5-5.5 3.536 3.536L12.5 14.5H9v-3.5zM5 19h14" />
+                                    </svg>
+                                </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <!-- Campo oculto para el ID del producto -->
             <input type="hidden" id="id_articulo" name="id_articulo" value="">
-        </form>
-        
+
+        {% else %}
+            <h1 class="text-center font-bold mb-2">No se ha seleccionado ninguna sucursal</h1>
+        {% endif %}
         <!-- Paginación -->
-        <div class="flex justify-start mt-4">
-            <nav class="inline-flex rounded-md shadow">
-                {% if productos.has_previous %}
-                    <a href="?page={{ productos.previous_page_number }}" 
-                    class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        Anterior
-                    </a>
-                {% endif %}
-                
-                {% for num in productos.paginator.page_range %}
-                    {% if num == productos.number %}
-                        <span class="px-3 py-2 bg-indigo-600 border border-gray-300 text-sm font-medium text-white">
-                            {{ num }}
-                        </span>
-                    {% else %}
-                        <a href="?page={{ num }}" 
-                        class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            {{ num }}
-                        </a>
-                    {% endif %}
-                {% endfor %}
-                
-                {% if productos.has_next %}
-                    <a href="?page={{ productos.next_page_number }}" 
-                    class="px-3 py-2 bg-white border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                        Siguiente
-                    </a>
-                {% endif %}
-            </nav>
-        </div>
+
         
         <!-- Incluir el modal de productos -->
 
@@ -180,7 +170,9 @@ document.getElementById('cerrarModal').addEventListener('click', function () {
     document.getElementById('modalProducto').classList.add('hidden');
 });
 
+document.addEventListener("DOMContentLoaded", function () {
 
+});
 
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -189,6 +181,35 @@ document.addEventListener("DOMContentLoaded", function() {
             let precio = parseFloat(precioElement.textContent);  // Obtiene el precio como número
             precioElement.textContent = precio.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });  // Formatea como moneda
         }
+        const table = document.querySelector("table");
+        const headers = table.querySelectorAll("th");
+        const tbody = table.querySelector("tbody");
+        
+        headers.forEach((header, index) => {
+            header.addEventListener("click", () => {
+                const rows = Array.from(tbody.querySelectorAll("tr"));
+                const isNumeric = index === 2; // Solo el código es numérico
+                const isAscending = header.dataset.order === "asc";
+
+                rows.sort((rowA, rowB) => {
+                    let cellA = rowA.cells[index].innerText.trim();
+                    let cellB = rowB.cells[index].innerText.trim();
+
+                    if (isNumeric) {
+                        return isAscending ? cellA - cellB : cellB - cellA;
+                    } else {
+                        return isAscending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+                    }
+                });
+
+                // Alternar el orden para la siguiente vez que se haga clic
+                header.dataset.order = isAscending ? "desc" : "asc";
+
+                // Reordenar la tabla con los nuevos valores
+                tbody.innerHTML = "";
+                rows.forEach(row => tbody.appendChild(row));
+            });
+        });
     });
 
 

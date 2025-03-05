@@ -11,6 +11,7 @@ class empresa (models.Model):
     direccion = models.TextField(max_length=100)
     telefono = models.CharField(max_length=40)
     email = models.EmailField(max_length=150)
+    fecha_demo = models.DateField(null=True)
 
     class Meta:
         db_table = "empresa"
@@ -23,7 +24,6 @@ class sucursales (models.Model):
     telefono = models.CharField(max_length=40)
     email = models.EmailField(max_length=150)
     
-
     class Meta:
         db_table = "sucursales"
 
@@ -62,7 +62,6 @@ class articulo_compuesto (models.Model):
 
 class articulos (models.Model):
     id_articulo = models.AutoField(primary_key=True)
-    id_empresa = models.ForeignKey(empresa, on_delete=models.CASCADE, db_column='id_empresa', default='1')
     id_unidad = models.ForeignKey(tipo_unidad, on_delete=models.CASCADE, db_column='id_unidad', default='1')
     id_categoria = models.ForeignKey(categorias, on_delete=models.CASCADE, db_column='id_categoria', default='1')
     codigo_articulo = models.CharField(max_length=100)
@@ -73,7 +72,7 @@ class articulos (models.Model):
     precio_venta = models.DecimalField(max_digits=25, decimal_places=3, default='0')
 
     def __str__(self):
-        return self.id_articulo
+        return f"Artículo {self.id_articulo} - {self.codigo_articulo}"
 
     class Meta:
         db_table = "articulos"
@@ -84,15 +83,26 @@ class articulo_composicion (models.Model):
     id_compuesto = models.ForeignKey(articulo_compuesto, on_delete=models.CASCADE, db_column='id_compuesto', default='1')
     id_articulo = models.ForeignKey(articulos, on_delete=models.CASCADE, db_column='id_articulo', default='1')
     proporcion = models.DecimalField(max_digits=25, decimal_places=3, default='0')
-
     class Meta:
         db_table = "articulo_composicion"
 
+class articulo_empresa (models.Model):
+    id_empresa = models.ForeignKey(empresa, on_delete=models.CASCADE, db_column='id_empresa', default='1')
+    id_articulo = models.ForeignKey(articulos, on_delete=models.CASCADE, db_column='id_articulo', default='1')
+    codigo_articulo = models.CharField(max_length=100)
+    precio_costo = models.DecimalField(max_digits=25, decimal_places=3, default='0')
+    precio_venta = models.DecimalField(max_digits=25, decimal_places=3, default='0')
+    class Meta:
+        db_table = "articulo_empresa"
 
+    
 class articulo_sucursal (models.Model):
     id_articulo = models.ForeignKey(articulos, on_delete=models.CASCADE, db_column='id_articulo', default='1')
     id_sucursal = models.ForeignKey(sucursales, on_delete=models.CASCADE, db_column='id_sucursal', default='1')
-
+    habilitado = models.CharField(max_length=1, default='S')
+    codigo_articulo = models.CharField(max_length=100, default='0')
+    precio_costo= models.DecimalField(max_digits=25, decimal_places=3, default='0')
+    precio_venta= models.DecimalField(max_digits=25, decimal_places=3, default='0')
     class Meta:
         db_table = "articulo_sucursal"
 
@@ -111,6 +121,13 @@ class stock_compuesto (models.Model):
     class Meta:
         db_table = "stock_compuesto" 
 
+class articulo_composicion_empresa (models.Model):
+    id_empresa = models.ForeignKey(empresa, on_delete=models.CASCADE, db_column='id_empresa', default='1')
+    id_articulo = models.ForeignKey(articulos, on_delete=models.CASCADE, db_column='id_articulo', default='1')
+    id_compuesto = models.ForeignKey(articulo_compuesto, on_delete=models.CASCADE, db_column='id_compuesto', default='1')
+    class Meta:
+        db_table = "articulo_composicion_empresa"
+        
 class stock (models.Model):
     id_stock = models.AutoField(primary_key=True)
     id_articulo = models.ForeignKey(articulos, on_delete=models.CASCADE, db_column='id_articulo', default='1') 

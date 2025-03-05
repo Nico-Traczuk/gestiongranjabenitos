@@ -3,9 +3,10 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.hashers import check_password
 from users.templates import *
-from users.models import User
+from users.models import  *
+
 #-----------------------------------------------------------
-# CREAMOS LA VISTA DEL LOGIN CON UNA VERIFICACION PARA EL CUIT Y CONTRASEÑAfrom django.contrib.auth import authenticate, login
+# CREAMOS LA VISTA DEL LOGIN CON UNA VERIFICACION PARA EL CUIT Y CONTRASEÑA
 
 
 def ViewLogin(request):
@@ -22,17 +23,34 @@ def ViewLogin(request):
         user = authenticate(request, username=cuit, password=password)
 
         if user is not None:
+            login(request, user)  # Iniciar sesión del usuario
+
+            # Obtener ID de empresa y sucursal desde las tablas relacionadas
+            id_user = user.id_user
+            id_empresa = usuario_empresa.objects.filter(id_user=user).values_list('id_empresa', flat=True).first()
+            id_sucursal = usuario_sucursal.objects.filter(id_user=user).values_list('id_sucursal', flat=True).first()
+            id_tipo_usuario = user.id_tipo_usuario  # Este sí está en User directamente
+            first_name = user.first_name
+            nombre_empresa = empresa.objects.filter(id_empresa=id_empresa).values_list('nombre_empresa', flat=True).first()
             print(f"✅ Usuario autenticado: {user}")
-            print(f"   - ID Empresa: {getattr(user.id_empresa, 'id_empresa', 'No asignado')}")
-            print(f"   - ID Sucursal: {getattr(user.id_sucursal, 'id_sucursal', 'No asignado')}")
-            print(f"   - Tipo de usuario: {user.id_tipo_usuario}")
-
-            login(request, user)
-
+            print(f"   - ID Usuario: {id_user}")
+            print(f"   - ID Empresa: {id_empresa if id_empresa else 'No asignado'}")
+            print(f"   - ID Sucursal: {id_sucursal if id_sucursal else 'No asignado'}")
+            print(f"   - Tipo de usuario: {id_tipo_usuario}")
+            print(f"   - Nombre: {first_name}")
+            print(f"   - Nombre de la empresa: {nombre_empresa}")
+            # Guardar información en la sesión
+            
+            request.session['id_user'] = id_user
+            request.session['id_empresa'] = id_empresa
+            request.session['id_sucursal'] = id_sucursal
+            request.session['id_tipo_usuario'] = id_tipo_usuario
+            request.session['first_name'] = first_name
+            request.session['nombre_empresa'] = nombre_empresa
             # Redirigir según el tipo de usuario
-            if user.id_tipo_usuario == 2:
+            if id_tipo_usuario == 2:
                 return redirect('/ventas/')
-            elif user.id_tipo_usuario == 1:
+            elif id_tipo_usuario == 1:
                 return redirect('/home/')
             return redirect(next_url)
 

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="text-center text-2xl font-bold mb-4">Artículos por sucursal</h1>
+
+<div class="container">
+    <p class="font-bold">Por favor, seleccione una sucursal para agregar o quitar artículos a las sucursales</p>
+    <form action="{% url 'articulosSucursal' %}" method="GET" class="flex gap-5 my-2 flex-col md:flex-row">
+        <select class="border px-4 py-2 rounded-md" name="sucursal" id="sucursal">
+            <option class="border px-4 py-2" value="0" {% if request.GET.sucursal == '0' %}selected{% endif %}>------</option>
+            {% for sucursal in sucursales %}
+            <option class="border px-4 py-2" value="{{ sucursal.id_sucursal }}" {% if request.GET.sucursal == sucursal.id_sucursal|stringformat:"s" %}selected{% endif %}>
+                {{ sucursal.nombre_sucursal }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-base font-medium rounded-md">Buscar</button>
+    </form>
+
+    {% if sucursal_seleccionada != '0' %}
+    <div class="flex gap-5 justify-around w-100">
+        <!-- Tabla de artículos en la sucursal -->
+        <form action="{% url 'quitar_articulo' %}" method="POST" class="flex flex-col">
+            {% csrf_token %}
+            <input type="hidden" name="sucursal_id" value="{{ sucursal_seleccionada }}">
+            <div>
+                <button type="submit" class="mt-4 float-right px-4 py-2 bg-red-500 hover:bg-red-700 text-white font-bold rounded">
+                    Quitar seleccionados
+                </button>
+            </div>
+            <table>
+                <caption>Artículos en la sucursal {{ sucursal_seleccionada }}</caption>
+                <thead>
+                    <tr>
+                        <th class="border px-4 py-2">Nombre del Producto</th>
+                        <th class="border px-4 py-2">Cod. Art</th>
+                        <th class="border px-4 py-2">Quitar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                        <tr>
+                            <td class="border px-4 py-2">{{ producto.descripcion }}</td>
+                            <td class="border px-4 py-2">{{ producto.codigo_articulo }}</td>
+                            <td class="border px-4 py-2">
+                                <input type="checkbox" name="articulos_a_quitar" value="{{ producto.id_articulo }}">
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="border px-4 py-2 text-center">No hay productos en esta sucursal.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+
+        <!-- Tabla de artículos disponibles en la empresa -->
+        <form action="{% url 'agregar_articulo' %}" method="POST" class="flex flex-col">
+            {% csrf_token %}
+            <input type="hidden" name="sucursal_id" value="{{ sucursal_seleccionada }}">
+            <div>
+                <button type="submit" class="mt-4 float-right px-4 py-2 bg-green-500 hover:bg-green-700 text-white font-bold rounded">
+                    Agregar seleccionados
+                </button>
+            </div>
+            <table>
+                <caption>Artículos disponibles para agregar</caption>
+                <thead>
+                    <tr>
+                        <th class="border px-4 py-2">Nombre del Producto</th>
+                        <th class="border px-4 py-2">Cod. Art</th>
+                        <th class="border px-4 py-2">Agregar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for empresaArt in empresa_list %}
+                        <tr>
+                            <td class="border px-4 py-2">{{ empresaArt.id_articulo.descripcion }}</td>
+                            <td class="border px-4 py-2">{{ empresaArt.codigo_articulo }}</td>
+                            <td class="border px-4 py-2">
+                                <input type="checkbox" name="articulos_a_agregar" value="{{ empresaArt.id_articulo.id_articulo }}">
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="3" class="border px-4 py-2 text-center">No hay artículos disponibles.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </form>
+    </div>
+{% else %}
+    <p>Por favor, seleccione una sucursal para ver los productos.</p>
+{% endif %}
+</div>
+
+{% endblock content %}

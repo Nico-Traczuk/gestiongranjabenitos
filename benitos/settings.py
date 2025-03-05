@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-706bn^p$kthqu-7xc4k5b@6bubf6wr-4r6wijcplnr(7x2^nte'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -88,10 +88,10 @@ DATABASES = {
        'ENGINE': 'mssql',
 		'USER': 'carniza',
 		'PASSWORD': 'carniza2010',
-		'HOST': '192.168.1.34',  
+		'HOST': '192.168.1.44',  
 		# 'HOST': 'localhost',  
 		#'HOST': '192.168.0.172\SVR12',
-		'NAME': 'carniza',
+		'NAME': 'carniza_desa',
 		'PORT': '1700',
 		'OPTIONS' : {
 				'driver': 'ODBC Driver 18 for SQL Server',  #'SQL Server Native Client 11.0',  #18 en linux

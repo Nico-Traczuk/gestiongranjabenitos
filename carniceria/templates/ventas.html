@@ -57,7 +57,7 @@
                     </div>
                 </div>
             </div>
-            <table class="w-full border-2 mt-5 shadow-2xl text-center hidden ">
+            <table class="w-full border-2 mt-5 shadow-2xl text-center hidden" id="tabla">
                 <thead>
                     <tr class="bg-gray-800 text-white">
                         <th class="py-2">Producto</th>
@@ -66,12 +66,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for producto in productos %}
+                    {% for articulo in productos %}
                         <tr class="border-b-2 hover:bg-slate-300">
-                            <td>{{ producto.descripcion }}</td>
-                            <td>{{ producto.codigo_articulo }}</td>  <!-- Changed from codigo to codigo_articulo -->
+                            <td>{{ articulo.descripcion }}</td>
+                            <td>{{ articulo.id_articulo.codigo_articulo }}</td> <!-- Asegúrate de que este campo es el correcto -->
                             <td>
-                                <button class="bg-green-400 px-4 py-1 rounded" onclick="agregarProducto({{producto.id_articulo}})">-></button>
+                                <button class="bg-green-400 px-4 py-1 rounded" onclick="agregarProducto({{ articulo.id_articulo.id_articulo}})">-></button>
                             </td>
                         </tr>
                     {% empty %}
@@ -229,22 +229,21 @@ const inputProductos = document.getElementById('inputProductos');
 
 
     /*Iteracion sobre productos para tener los datos de cada producto*/
-    const productos = [
-        {% for producto in productos %}
+    const articulosSucursal = [
+        {% for articulo in productos %}
             {
-                id_articulo: {{ producto.id_articulo }},
-                id_empresa: {{ producto.id_empresa.id_empresa }},
-                id_categoria: {{ producto.id_categoria.id_categoria }},
-                id_unidad: {{ producto.id_unidad.id_unidad }},
-                descripcion: "{{ producto.descripcion }}",
-                codigo_articulo: "{{ producto.codigo_articulo }}",
-                precio_venta: {{producto.precio_venta}},
-                
+                id_articulo: {{ articulo.id_articulo.id_articulo }},
+                id_categoria: {{ articulo.id_articulo.id_categoria.id_categoria|default:"null" }},
+                id_unidad: {{ articulo.id_articulo.id_unidad.id_unidad|default:"null" }},
+                descripcion: "{{ articulo.id_articulo.descripcion }}",  
+                codigo_articulo: "{{ articulo.id_articulo.codigo_articulo }}", 
+                precio_venta: {{ articulo.precio_venta }},
             },
         {% empty %}
-            [],
+            []
         {% endfor %}
     ];
+
     let productosSeleccionados = [];
     let totalVenta = 0;
     let preciosVentas = {};
@@ -256,9 +255,17 @@ const inputProductos = document.getElementById('inputProductos');
 function agregarProducto(id_articulo, pesoDecimal = null, precioVenta = null) {
     console.log('Agregar producto', id_articulo, 'Peso:', pesoDecimal, 'Precio:', precioVenta);
 
-    const producto = productos.find(p => p.id_articulo === id_articulo);
-    if (!producto) {
-        console.error("Producto no encontrado");
+    // Buscar el artículo en 'productos' de la sucursal (articulo_sucursal)
+    const productoSucursal = articulosSucursal.find(p => p.id_articulo === id_articulo);
+    if (!productoSucursal) {
+        console.error("Producto no encontrado en la sucursal.");
+        return;
+    }
+
+    // Verificar que el peso no exceda el stock disponible
+    const stockDisponible = productoSucursal.stock; // Supongamos que 'stock' es el campo que contiene la cantidad disponible.
+    if (pesoDecimal && pesoDecimal > stockDisponible) {
+        console.error("El peso excede el stock disponible.");
         return;
     }
 
@@ -270,19 +277,19 @@ function agregarProducto(id_articulo, pesoDecimal = null, precioVenta = null) {
     }
 
     const cantidadInicial = pesoDecimal !== null ? pesoDecimal : 1;
-    const precioFinal = precioVenta !== null ? precioVenta : producto.precio_venta;
-
+    const precioFinal = precioVenta !== null ? precioVenta : productoSucursal.precio_venta;
+    console.log('precio final',precioFinal);
     let fila = document.createElement("tr");
     fila.id = `fila${id_articulo}`;
     fila.innerHTML = `
-        <td>${producto.descripcion}</td>
+        <td>${productoSucursal.descripcion}</td>
         <td>
             <input type="number" id="cantidad${id_articulo}" value="${cantidadInicial}" 
-                min="0" step="0.1" class="w-20 text-center" readonly />
+                min="0" step="0.1" class="w-20 text-center" ${productoSucursal.codigo_articulo === '9999' ? '' : 'readonly'} />
         </td>
         <td>
             <input type="number" id="precio${id_articulo}" value="${precioFinal}" 
-                class="w-20 text-center" ${id_articulo === '9999' ? '' : 'readonly'} />
+                class="w-20 text-center" ${productoSucursal.codigo_articulo === '9999' ? '' : 'readonly'} />
         </td>
         <td id="subtotal${id_articulo}">$${(cantidadInicial * precioFinal).toLocaleString("es-AR", { style: "currency", currency: "ARS" })}</td>
         <td>
@@ -301,7 +308,6 @@ function agregarProducto(id_articulo, pesoDecimal = null, precioVenta = null) {
     calcularTotal(id_articulo);
 }
 
-
 function calcularTotal(id_articulo) {
     const cantidadInput = document.getElementById(`cantidad${id_articulo}`);
     const precioInput = document.getElementById(`precio${id_articulo}`);
@@ -317,42 +323,55 @@ function calcularTotal(id_articulo) {
         return;
     }
 
+    // Obtener el artículo de la sucursal (productos de la sucursal)
+    const productoSucursal = articulosSucursal.find(p => p.id_articulo === id_articulo );
+    if (!productoSucursal) {
+        console.error("Producto no encontrado en la sucursal.");
+        return;
+    }
+
     const cantidad = parseFloat(cantidadInput.value) || 0;
     const precio = parseFloat(precioInput.value) || 0;
-    const subtotal = cantidad * precio;
 
+    // Verificar si la cantidad no excede el stock
+    if (cantidad > productoSucursal.stock) {
+        console.error("La cantidad excede el stock disponible.");
+        cantidadInput.value = productoSucursal.stock; // Limitar la cantidad al stock disponible
+        return;
+    }
+
+    const subtotal = cantidad * precio;
     subtotalTd.textContent = `$${subtotal.toFixed(2)}`;
 
-    actualizarTotalVenta();
-}
-
-
-function actualizarTotalVenta() {
-    let totalVenta = 0;
-
-    document.querySelectorAll('[id^="subtotal"]').forEach(subtotal => {
-        const valor = parseFloat(subtotal.textContent.replace('$', '')) || 0;
-        totalVenta += valor;
-    });
-
-    document.getElementById("totalVenta").textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-    console.log("Total Venta actualizado:", totalVenta);
-}
-
-
-function eliminarProducto(id_articulo) {
-    document.getElementById(`fila${id_articulo}`).remove();
+    // Actualizar el total de la venta
     actualizarTotalVenta();
 }
 
 /*-------------------------------------------------------------------------------*/      
+function actualizarTotalVenta() {
+    let totalVenta = 0;
 
+    // Iterar sobre cada subtotal y sumar su valor
+    document.querySelectorAll('[id^="subtotal"]').forEach(subtotal => {
+        // Extraer el valor numérico del subtotal (sin el signo '$')
+        const valor = parseFloat(subtotal.textContent.replace('$', '').replace(',', '')) || 0;
+        totalVenta += valor;
+    });
 
+    // Mostrar el total de la venta en el formato adecuado
+    document.getElementById("totalVenta").textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    console.log("Total Venta actualizado:", totalVenta);
+}
+/*-------------------------------------------------------------------------------*/      
+function eliminarProducto(id_articulo) {
+    // Eliminar el producto de la tabla del detalle
+    document.getElementById(`fila${id_articulo}`).remove();
+    
+    // Actualizar el total de la venta
+    actualizarTotalVenta();
+}
 
-/*-------------------------------------------------------------------------------*/   
-
-
-
+/*-------------------------------------------------------------------------------*/      
 
 function eliminarVenta(id_articulo) {
     // Obtener el elemento HTML del producto
@@ -362,7 +381,7 @@ function eliminarVenta(id_articulo) {
     const inputPrecioVenta = document.getElementById(`precioVenta${id_articulo}`);
     const inputCantidad = document.getElementById(`cantidad${id_articulo}`);
     
-    // Mostrar en consola los valores actuales (para debugging)
+    // Mostrar en consola los valores antes de eliminar (para debugging)
     console.log('Valores antes de eliminar');
     console.log(inputCantidad.value);
     console.log(inputPrecioVenta.value);
@@ -379,7 +398,7 @@ function eliminarVenta(id_articulo) {
     const indice = productosSeleccionados.findIndex(producto => producto.id_articulo === id_articulo);
     
     // Si el producto existe en el array, eliminarlo
-    if (indice === -1) {
+    if (indice !== -1) {
         productosSeleccionados.splice(indice, 1);
     }
     
@@ -390,32 +409,15 @@ function eliminarVenta(id_articulo) {
     
     // Eliminar el precio de venta del objeto preciosVentas
     delete preciosVentas[`precioVenta${id_articulo}`];
+    
     // Actualizar el total de venta
-    updateTotalVenta();
-
+    actualizarTotalVenta();
 }
 
 /*-------------------------------------------------------------------------------*/    
-    /* Esta es funcion para la venta individual */
-    // function updateTotalVenta() {
-    //     totalVenta = 0;
-    //     for (const id in preciosVentas) {
-    //       const precio = preciosVentas[id];
-    //       const cantidadInput = document.getElementById(`cantidad${id.replace('precioVenta', '')}`);
-    //       const cantidadValor = parseFloat(cantidadInput.value);
-    //       if (!isNaN(cantidadValor)) {
-    //         totalVenta += cantidadValor * precio;
-    //       }
-    //     }
-    //     spanTotalVenta.textContent = `$${totalVenta.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-    //   }
- 
-/*-------------------------------------------------------------------------------*/    
- 
 
 
-/*-------------------------------------------------------------------------------*/    
+
 
 /* FUNCION PARA CERRAR VENTA, ES CON DOMCONTENTLOADED PARA QUE CARGE AL INICIO */
 
@@ -532,14 +534,11 @@ function divAlerta(mensaje) {
 
 /*-------------------------------------------------------------------------------*/    
       /*   BUSCADOR DE PRODUCTOS Y AGREGADO     */
-    document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function() {
     const inputProductos = document.getElementById('inputProductos');
     const btnAgregar = document.getElementById('agregarProducto');
     const cantKilosInput = document.getElementById('cant_kilos');
     const cantValorInput = document.getElementById('cant_valor');
-
-    console.log("Elemento inputProductos:", inputProductos);
-    console.log("Elemento btnAgregar:", btnAgregar);
 
     if (!inputProductos || !btnAgregar || !cantKilosInput || !cantValorInput) {
         console.error("Uno o más elementos no fueron encontrados en el DOM.");
@@ -557,76 +556,51 @@ function divAlerta(mensaje) {
     });
 
     function searchProducts(inputValue) {
-        console.log("Código ingresado:", inputValue);
+    console.log("Código ingresado:", inputValue);
 
-        if (!inputValue || isNaN(inputValue)) {
-            console.warn("Entrada inválida. Solo se permiten números.");
-            inputProductos.value = ''; // Limpiar el campo
-            return;
-        }
-
-        let codigoArticulo = "";
-        let pesoDecimal = null;
-
-        if (inputValue.length === 13) {
-            // 🔥 Extraer el código del artículo (4 primeros dígitos DESPUÉS de los primeros 3)
-            codigoArticulo = inputValue.slice(3, 7); // Código del artículo (ej: "0002")
-            const peso = inputValue.slice(7, 12);    // Peso en gramos
-            console.log("Código del artículo extraído:", codigoArticulo);
-            console.log("Peso extraído en formato entero:", peso);
-
-            if (isNaN(peso)) {
-                console.error("El peso no es un número válido.");
-                inputProductos.value = '';
-                return;
-            }
-
-            pesoDecimal = (parseFloat(peso) / 1000).toFixed(3);
-            console.log("Peso convertido a KG:", pesoDecimal);
-        } else if (inputValue.length === 4) {
-            // 🔥 Si ingresan solo 4 dígitos, es una búsqueda manual por código de artículo
-            codigoArticulo = inputValue;
-            console.log("Búsqueda manual por código de artículo:", codigoArticulo);
-        } else {
-            console.warn("El código ingresado no es válido. Debe tener 4 o 14 dígitos.");
-            inputProductos.value = '';
-            return;
-        }
-
-        console.log('codigo articulo antes del cambio', inputProductos.value);
-        inputProductos.value = codigoArticulo;
-        console.log('codigo articulo despues del cambio', inputProductos.value);
-
-        // 🔥 **Buscar el producto en la base de datos por código de artículo*
-        const productoEncontrado = productos.find(p => String(p.codigo_articulo).trim() === inputProductos.value.trim());
-        console.log(productoEncontrado);
-
-        // Si se encuentra el producto
-        if (productoEncontrado) {
-        // Si el código de artículo es 9999, habilitar los campos y permitir que el usuario los rellene
-        if (codigoArticulo === '9999') {
-            const cantKilos = parseFloat(cantKilosInput.value);
-            const cantValor = parseFloat(cantValorInput.value);
-
-            // Verificar si los campos están vacíos o no tienen un valor válido
-            if (!cantKilos || !cantValor || isNaN(cantKilos) || isNaN(cantValor)) {
-                alert("Por favor, complete los campos de cantidad (kg) y valor antes de continuar.");
-
-                return; // No agregar el producto si los campos no están completos o son inválidos
-            }
-
-            // Llamar a agregarProducto con los valores personalizados
-                agregarProducto(productoEncontrado.id_articulo, cantKilos, cantValor);
-            } else {
-                // Usar los datos de la base de datos para otros productos
-                agregarProducto(productoEncontrado.id_articulo, pesoDecimal, productoEncontrado.precio_venta);
-            }
-
-            // Limpiar el campo del código de producto después de agregarlo
-            inputProductos.value = '';
-        }
+    if (!inputValue || isNaN(inputValue)) {
+        console.warn("Entrada inválida. Solo se permiten números.");
+        inputProductos.value = ''; // Limpiar el campo
+        return;
     }
+
+    let codigoArticulo = "";
+    let pesoDecimal = null;
+
+    if (inputValue.length === 13) {
+        codigoArticulo = inputValue.slice(3, 7); // Código del artículo
+        const peso = inputValue.slice(7, 12);    // Peso en gramos
+
+        if (isNaN(peso)) {
+            console.error("El peso no es un número válido.");
+            inputProductos.value = '';
+            return;
+        }
+
+        pesoDecimal = (parseFloat(peso) / 1000).toFixed(3);
+    } else if (inputValue.length === 4) {
+        codigoArticulo = inputValue;
+    } else {
+        console.warn("El código ingresado no es válido.");
+        inputProductos.value = '';
+        return;
+    }
+
+    // Ahora busca en articulos_sucursal
+    const productoEncontrado = articulosSucursal.find(p => String(p.codigo_articulo).trim() === inputProductos.value.trim());
+
+    if (productoEncontrado) {
+        // Aquí añades el producto al carrito o lista según la lógica
+        agregarProducto(productoEncontrado.id_articulo, pesoDecimal, productoEncontrado.precio_venta);
+    } else {
+        console.log("Producto no encontrado.");
+    }
+
+    inputProductos.value = ''; // Limpiar el campo
+}
+
 });
+
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'F2' || event.key === 'F5' || event.key === 'F6' || event.key === 'F7' || event.key === 'F8' || event.key === 'F12') {

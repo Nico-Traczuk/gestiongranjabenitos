@@ -38,4 +38,7 @@ urlpatterns = [
     path('stockCompuesto/', views.ViewStockCompuesto, name='stockCompuesto'),
     path('stockProducto/', views.ViewStockProducto, name='stockProducto'),
     path('get_producto_data/<int:id_articulo>/', get_producto_data, name='get_producto_data'),
+    path('articulosSucursal', views.ViewArticulosSucursal, name='articulosSucursal'),
+    path('agregar-articulo/', agregar_articulo, name='agregar_articulo'),
+    path('quitar-articulo/', quitar_articulo, name='quitar_articulo'),
 ]
